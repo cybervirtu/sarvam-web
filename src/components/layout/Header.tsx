@@ -1,11 +1,11 @@
 import { Menu, Bell, Search, User, Sun, Moon } from 'lucide-react';
-import { useAppStore } from '../../app/store';
+import { useUIStore } from '../../app/store';
 import { useThemeStore } from '../../app/store/theme';
 import { IconButton } from '../common/IconButton';
 import { useLocation } from 'react-router-dom';
 
 export const Header = () => {
-    const toggleSidebar = useAppStore((state) => state.toggleSidebar);
+    const toggleSidebar = useUIStore((state) => state.toggleSidebar);
     const { theme, setTheme } = useThemeStore();
     const location = useLocation();
 

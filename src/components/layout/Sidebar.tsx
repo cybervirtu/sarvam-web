@@ -1,29 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
     Inbox, Calendar, CalendarDays,
     CheckCircle2, FolderKanban, Tags, Filter, X,
     Plus, Settings, Hash
 } from 'lucide-react';
-import { useAppStore } from '../../app/store';
+import { useUIStore, useProjectStore } from '../../app/store';
 import { cn } from '../../lib/utils';
-import { Project } from '../../types';
-import { getProjects } from '../../services/mocks';
 
 export const Sidebar = () => {
-    const { isSidebarOpen, toggleSidebar } = useAppStore();
-    const [projects, setProjects] = useState<Project[]>([]);
+    const { isSidebarOpen, toggleSidebar } = useUIStore();
+    const { projects, fetchProjectsAndLabels } = useProjectStore();
 
     useEffect(() => {
-        const fetchProjects = async () => {
-            try {
-                const data = await getProjects();
-                setProjects(data);
-            } catch (error) {
-                console.error('Failed to fetch projects:', error);
-            }
-        };
-        fetchProjects();
+        if (projects.length === 0) {
+            fetchProjectsAndLabels();
+        }
     }, []);
 
     const mainNav = [

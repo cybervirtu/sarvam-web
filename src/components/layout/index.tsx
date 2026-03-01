@@ -2,14 +2,14 @@ import React from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { cn } from '../../lib/utils';
-import { useAppStore } from '../../app/store';
+import { useUIStore } from '../../app/store';
 
 interface LayoutProps {
     children: React.ReactNode;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
-    const isSidebarOpen = useAppStore((state) => state.isSidebarOpen);
+    const isSidebarOpen = useUIStore((state) => state.isSidebarOpen);
 
     return (
         <div className="flex h-screen w-full bg-background text-foreground overflow-hidden font-sans selection:bg-primary/20">

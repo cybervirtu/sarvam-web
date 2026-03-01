@@ -1,28 +1,17 @@
-import { useEffect, useState } from 'react';
-import { Task } from '../../types';
-import { getTasks } from '../../services/mocks';
+import { useEffect } from 'react';
+import { useTaskStore } from '../../app/store';
 import { TaskItem } from '../../components/tasks/TaskItem';
 import { Plus, ListFilter, LayoutGrid, Loader2 } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { IconButton } from '../../components/common/IconButton';
 
 export const Inbox = () => {
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { tasks, isLoading, fetchTasks } = useTaskStore();
 
     useEffect(() => {
-        const fetchTasks = async () => {
-            try {
-                const data = await getTasks();
-                setTasks(data);
-            } catch (error) {
-                console.error('Failed to fetch tasks:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchTasks();
+        if (tasks.length === 0) {
+            fetchTasks();
+        }
     }, []);
 
     return (

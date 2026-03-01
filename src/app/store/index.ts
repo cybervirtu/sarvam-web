@@ -1,11 +1,4 @@
-import { create } from 'zustand';
-
-interface AppState {
-    isSidebarOpen: boolean;
-    toggleSidebar: () => void;
-}
-
-export const useAppStore = create<AppState>((set) => ({
-    isSidebarOpen: true,
-    toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
-}));
+export * from './tasks';
+export * from './projects';
+export * from './ui';
+export * from './theme';
