@@ -35,7 +35,7 @@ export const Sidebar = () => {
                     className={({ isActive }) =>
                         `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${isActive
                             ? 'bg-primary/10 text-primary'
-                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                         }`
                     }
                 >
@@ -51,26 +51,26 @@ export const Sidebar = () => {
             {/* Mobile Backdrop */}
             {isSidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-30 md:hidden transition-opacity"
+                    className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 md:hidden transition-opacity"
                     onClick={toggleSidebar}
                 />
             )}
 
             <aside
-                className={`fixed md:sticky top-0 left-0 z-40 w-64 h-screen bg-[#FAFAFA] flex flex-col pt-4 pb-6 px-3 shrink-0 border-r border-slate-200 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+                className={`fixed md:sticky top-0 left-0 z-40 w-64 h-screen bg-muted/30 flex flex-col pt-4 pb-6 px-3 shrink-0 border-r border-border transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
                     } ${isSidebarOpen ? '' : 'md:hidden' /* If you want to allow collapsing on desktop too, handle it here */}`}
             >
                 <div className="flex items-center justify-between px-3 mb-6">
                     <div className="flex items-center gap-2 cursor-pointer group">
-                        <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+                        <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
                             <CheckCircle2 className="w-5 h-5" />
                         </div>
-                        <span className="text-lg font-bold tracking-tight text-slate-900">Sarvam Web</span>
+                        <span className="text-lg font-bold tracking-tight text-foreground">Sarvam Web</span>
                     </div>
 
                     <button
                         onClick={toggleSidebar}
-                        className="md:hidden p-2 text-slate-500 hover:bg-slate-200 rounded-lg transition-colors"
+                        className="md:hidden p-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -80,7 +80,7 @@ export const Sidebar = () => {
                     {renderNavItems(mainNav)}
 
                     <div>
-                        <div className="px-3 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        <div className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                             Workspace
                         </div>
                         {renderNavItems(secondaryNav)}
