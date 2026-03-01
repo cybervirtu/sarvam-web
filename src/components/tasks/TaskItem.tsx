@@ -1,8 +1,8 @@
 import React from 'react';
 import { Task } from '../../types';
 import { cn } from '../../lib/utils';
-import { CheckCircle2, Circle, MoreVertical, Hash } from 'lucide-react';
-import { IconButton } from '../common/IconButton';
+import { CheckCircle2, Circle, Hash } from 'lucide-react';
+import { TaskActions } from './TaskActions';
 
 interface TaskItemProps {
     task: Task;
@@ -34,10 +34,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
                     )}>
                         {task.content}
                     </h4>
-                    <IconButton
-                        icon={MoreVertical}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7"
-                    />
+                    <TaskActions className="opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
 
                 {task.description && (
