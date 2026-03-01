@@ -13,11 +13,6 @@ export const Inbox = () => {
         }
     }, []);
 
-    const handleAddTask = () => {
-        // Placeholder for add task logic
-        console.log('Add task clicked');
-    };
-
     return (
         <div className="max-w-4xl mx-auto py-8 px-4 animate-in fade-in duration-500">
             <header className="flex items-center justify-between mb-8">
@@ -38,7 +33,6 @@ export const Inbox = () => {
                 tasks={tasks}
                 isLoading={isLoading}
                 emptyMessage="No tasks in your inbox. Relax!"
-                onAddTask={handleAddTask}
             />
         </div>
     );

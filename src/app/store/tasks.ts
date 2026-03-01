@@ -10,7 +10,7 @@ interface TaskState {
     // Actions
     fetchTasks: () => Promise<void>;
     setTasks: (tasks: Task[]) => void;
-    addTask: (task: Task) => void;
+    addTask: (task: Partial<Task>) => void;
     updateTask: (id: string, updates: Partial<Task>) => void;
     toggleTaskCompletion: (id: string) => void;
     deleteTask: (id: string) => void;
@@ -33,9 +33,23 @@ export const useTaskStore = create<TaskState>((set) => ({
 
     setTasks: (tasks) => set({ tasks }),
 
-    addTask: (task) => set((state) => ({
-        tasks: [task, ...state.tasks]
-    })),
+    addTask: (taskData: Partial<Task>) => set((state) => {
+        const newTask: Task = {
+            id: Math.random().toString(36).substring(2, 9),
+            content: taskData.content || 'Untitled Task',
+            description: taskData.description || '',
+            isCompleted: false,
+            priority: taskData.priority || 4,
+            labels: taskData.labels || [],
+            projectId: taskData.projectId || 'inbox',
+            sectionId: taskData.sectionId,
+            order: state.tasks.length + 1,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            ...taskData
+        };
+        return { tasks: [newTask, ...state.tasks] };
+    }),
 
     updateTask: (id, updates) => set((state) => ({
         tasks: state.tasks.map((task) =>
