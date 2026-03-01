@@ -1,14 +1,30 @@
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
     Inbox, Calendar, CalendarDays,
     CheckCircle2, FolderKanban, Tags, Filter, X,
-    Plus, Settings
+    Plus, Settings, Hash
 } from 'lucide-react';
 import { useAppStore } from '../../app/store';
 import { cn } from '../../lib/utils';
+import { Project } from '../../types';
+import { getProjects } from '../../services/mocks';
 
 export const Sidebar = () => {
     const { isSidebarOpen, toggleSidebar } = useAppStore();
+    const [projects, setProjects] = useState<Project[]>([]);
+
+    useEffect(() => {
+        const fetchProjects = async () => {
+            try {
+                const data = await getProjects();
+                setProjects(data);
+            } catch (error) {
+                console.error('Failed to fetch projects:', error);
+            }
+        };
+        fetchProjects();
+    }, []);
 
     const mainNav = [
         { icon: Inbox, label: 'Inbox', path: '/inbox', count: 5 },
@@ -16,13 +32,7 @@ export const Sidebar = () => {
         { icon: CalendarDays, label: 'Upcoming', path: '/upcoming' },
     ];
 
-    const secondaryNav = [
-        { icon: FolderKanban, label: 'Projects', path: '/projects' },
-        { icon: Tags, label: 'Labels', path: '/labels' },
-        { icon: Filter, label: 'Filters', path: '/filters' },
-    ];
-
-    const renderNavItems = (items: any[]) => (
+    const renderNavItems = (items: { icon: any; label: string; path: string; count?: number; color?: string }[]) => (
         <ul className="space-y-1">
             {items.map((item) => (
                 <li key={item.path}>
@@ -42,7 +52,14 @@ export const Sidebar = () => {
                             )
                         }
                     >
-                        <item.icon className={cn("w-4 h-4 shrink-0 transition-colors", "group-hover:text-foreground")} />
+                        {item.color ? (
+                            <div
+                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: item.color }}
+                            />
+                        ) : (
+                            <item.icon className={cn("w-4 h-4 shrink-0 transition-colors", "group-hover:text-foreground")} />
+                        )}
                         <span className="flex-1 truncate">{item.label}</span>
                         {item.count !== undefined && (
                             <span className="text-[10px] font-semibold bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground group-hover:bg-muted-foreground/10">
@@ -115,7 +132,28 @@ export const Sidebar = () => {
                                 <Plus className="w-3 h-3" />
                             </button>
                         </div>
-                        {renderNavItems(secondaryNav)}
+
+                        {/* Static Workspace Links */}
+                        {renderNavItems([
+                            { icon: FolderKanban, label: 'Projects', path: '/projects' },
+                            { icon: Tags, label: 'Labels', path: '/labels' },
+                            { icon: Filter, label: 'Filters', path: '/filters' },
+                        ])}
+
+                        {/* Dynamic Projects */}
+                        {projects.length > 0 && (
+                            <div className="mt-4 space-y-1">
+                                <div className="px-3 mb-2">
+                                    <span className="text-[10px] font-semibold text-muted-foreground/30 uppercase tracking-wider">My Projects</span>
+                                </div>
+                                {renderNavItems(projects.filter(p => !p.isInbox).map(p => ({
+                                    icon: Hash,
+                                    label: p.name,
+                                    path: `/projects/${p.id}`,
+                                    color: p.color
+                                })))}
+                            </div>
+                        )}
                     </section>
                 </div>
 
@@ -129,3 +167,4 @@ export const Sidebar = () => {
         </>
     );
 };
+
