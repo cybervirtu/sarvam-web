@@ -4,6 +4,8 @@ import { cn } from '../../lib/utils';
 import { CheckCircle2, Circle, Hash } from 'lucide-react';
 import { TaskActions } from './TaskActions';
 
+import { useTaskStore, useUIStore } from '../../app/store';
+
 interface TaskItemProps {
     task: Task;
 }
@@ -16,9 +18,21 @@ const priorityColors: Record<number, string> = {
 };
 
 export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
+    const openTaskDrawer = useUIStore((state) => state.openTaskDrawer);
+    const toggleTaskCompletion = useTaskStore((state) => state.toggleTaskCompletion);
+
     return (
-        <div className="group flex items-start gap-3 p-3 rounded-xl hover:bg-muted/50 transition-all duration-200 border border-transparent hover:border-border/50">
-            <button className="mt-0.5 shrink-0 focus:outline-none transition-transform active:scale-90">
+        <div
+            onClick={() => openTaskDrawer(task.id)}
+            className="group flex items-start gap-3 p-3 rounded-xl hover:bg-muted/50 transition-all duration-200 border border-transparent hover:border-border/50 cursor-pointer"
+        >
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    toggleTaskCompletion(task.id);
+                }}
+                className="mt-0.5 shrink-0 focus:outline-none transition-transform active:scale-90"
+            >
                 {task.isCompleted ? (
                     <CheckCircle2 className="w-5 h-5 text-primary" />
                 ) : (

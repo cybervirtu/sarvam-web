@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { cn } from '../../lib/utils';
 import { useUIStore } from '../../app/store';
+import { TaskDrawer } from '../tasks/TaskDrawer';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -12,7 +13,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     const isSidebarOpen = useUIStore((state) => state.isSidebarOpen);
 
     return (
-        <div className="flex h-screen w-full bg-background text-foreground overflow-hidden font-sans selection:bg-primary/20">
+        <div className="flex h-screen w-full bg-background text-foreground overflow-hidden font-sans selection:bg-primary/20 relative">
             <Sidebar />
             <div className={cn(
                 "flex-1 flex flex-col h-full overflow-hidden relative min-w-0 transition-all duration-300",
@@ -25,6 +26,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </div>
                 </main>
             </div>
+            <TaskDrawer />
         </div>
     );
 };
