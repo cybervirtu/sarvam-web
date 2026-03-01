@@ -43,12 +43,17 @@ export default {
                 },
             },
             borderRadius: {
+                xl: "calc(var(--radius) + 4px)",
                 lg: "var(--radius)",
                 md: "calc(var(--radius) - 2px)",
                 sm: "calc(var(--radius) - 4px)",
             },
             fontFamily: {
-                sans: ['Inter', 'sans-serif'],
+                sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+            },
+            boxShadow: {
+                'soft': '0 2px 10px 0 rgba(0, 0, 0, 0.05)',
+                'premium': '0 4px 20px -2px rgba(0, 0, 0, 0.1), 0 2px 10px -2px rgba(0, 0, 0, 0.06)',
             }
         },
     },
