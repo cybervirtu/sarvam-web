@@ -11,7 +11,7 @@ export const Inbox = () => {
         if (tasks.length === 0) {
             fetchTasks();
         }
-    }, []);
+    }, [tasks.length, fetchTasks]);
 
     return (
         <div className="max-w-4xl mx-auto py-8 px-4 animate-in fade-in duration-500">

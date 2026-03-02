@@ -16,7 +16,7 @@ export const Sidebar = () => {
         if (projects.length === 0) {
             fetchProjectsAndLabels();
         }
-    }, []);
+    }, [projects.length, fetchProjectsAndLabels]);
 
     const mainNav = [
         { icon: Inbox, label: 'Inbox', path: '/inbox', count: 5 },
@@ -24,7 +24,7 @@ export const Sidebar = () => {
         { icon: CalendarDays, label: 'Upcoming', path: '/upcoming' },
     ];
 
-    const renderNavItems = (items: { icon: any; label: string; path: string; count?: number; color?: string }[]) => (
+    const renderNavItems = (items: { icon: React.ElementType; label: string; path: string; count?: number; color?: string }[]) => (
         <ul className="space-y-1">
             {items.map((item) => (
                 <li key={item.path}>
