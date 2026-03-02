@@ -163,4 +163,52 @@ export const MOCK_TASKS: Task[] = [
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     },
+    {
+        id: 't6',
+        projectId: 'p2',
+        content: 'Draft launch announcement',
+        description: 'Prepare the blog post and email newsletter.',
+        isCompleted: false,
+        priority: 2,
+        dueDate: {
+            date: '2026-03-03', // Tomorrow
+            isRecurring: false,
+        },
+        labels: ['l1'],
+        order: 6,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    },
+    {
+        id: 't7',
+        projectId: 'p3',
+        content: 'Pick up dry cleaning',
+        description: '',
+        isCompleted: false,
+        priority: 4,
+        dueDate: {
+            date: '2026-03-05', // In 3 days
+            isRecurring: false,
+        },
+        labels: [],
+        order: 7,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    },
+    {
+        id: 't8',
+        projectId: 'p2',
+        content: 'Final sanity check',
+        description: '',
+        isCompleted: false,
+        priority: 1,
+        dueDate: {
+            date: '2026-03-08', // In 6 days
+            isRecurring: false,
+        },
+        labels: [],
+        order: 8,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    },
 ];

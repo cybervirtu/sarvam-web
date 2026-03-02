@@ -50,3 +50,19 @@ export const formatDisplayDate = (dateStr: string): string => {
         year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
     });
 };
+
+/**
+ * Returns an array of YYYY-MM-DD strings for the next 7 days, including today.
+ */
+export const getNext7Days = (): string[] => {
+    const days: string[] = [];
+    const today = new Date();
+
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        days.push(date.toISOString().split('T')[0]);
+    }
+
+    return days;
+};
