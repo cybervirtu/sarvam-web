@@ -147,4 +147,20 @@ export const MOCK_TASKS: Task[] = [
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     },
+    {
+        id: 't5',
+        projectId: 'p1',
+        content: 'Review quarterly report',
+        description: 'Need to finish the financial summary.',
+        isCompleted: false,
+        priority: 1,
+        dueDate: {
+            date: '2024-01-01', // Overdue
+            isRecurring: false,
+        },
+        labels: ['l1'],
+        order: 5,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    },
 ];
