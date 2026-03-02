@@ -27,6 +27,7 @@ const AppRouter = () => {
                         <Route path="/today" element={<TodayPage />} />
                         <Route path="/upcoming" element={<UpcomingPage />} />
                         <Route path="/projects" element={<ProjectsPage />} />
+                        <Route path="/projects/:id" element={<ProjectsPage />} />
                         <Route path="/labels" element={<LabelsPage />} />
                         <Route path="/filters" element={<FiltersPage />} />
                     </Routes>

@@ -1,15 +1,17 @@
 import { create } from 'zustand';
-import { Project, Label } from '../../types';
-import { getProjects, getLabels } from '../../services/mocks';
+import { Project, Label, Section } from '../../types';
+import { getProjects, getLabels, getSections } from '../../services/mocks';
 
 interface ProjectState {
     projects: Project[];
+    sections: Section[];
     labels: Label[];
     isLoading: boolean;
     error: string | null;
 
     // Actions
     fetchProjectsAndLabels: () => Promise<void>;
+    fetchSections: (projectId: string) => Promise<void>;
     addProject: (project: Project) => void;
     updateProject: (id: string, updates: Partial<Project>) => void;
     toggleProjectFavorite: (id: string) => void;
@@ -22,6 +24,7 @@ interface ProjectState {
 
 export const useProjectStore = create<ProjectState>((set) => ({
     projects: [],
+    sections: [],
     labels: [],
     isLoading: false,
     error: null,
@@ -34,6 +37,16 @@ export const useProjectStore = create<ProjectState>((set) => ({
                 getLabels()
             ]);
             set({ projects, labels, isLoading: false });
+        } catch (error) {
+            set({ error: (error as Error).message, isLoading: false });
+        }
+    },
+
+    fetchSections: async (projectId: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            const sections = await getSections(projectId);
+            set({ sections, isLoading: false });
         } catch (error) {
             set({ error: (error as Error).message, isLoading: false });
         }
