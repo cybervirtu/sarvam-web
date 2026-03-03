@@ -1,6 +1,20 @@
 import { create } from 'zustand';
-import { Task } from '../../types';
+import { Task, DueDate, Priority } from '../../types';
 import { getTasks } from '../../services/mocks';
+
+export type NewTaskPayload = {
+    title: string;
+    description?: string | null;
+    due?: DueDate | null;
+    priority?: Priority;
+    labels?: string[];
+    projectId?: string | null;
+    sectionId?: string | null;
+    parentId?: string | null;
+    order?: number;
+};
+
+export type UpdateTaskPayload = Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>>;
 
 interface TaskState {
     tasks: Task[];
@@ -10,13 +24,18 @@ interface TaskState {
     // Actions
     fetchTasks: () => Promise<void>;
     setTasks: (tasks: Task[]) => void;
-    addTask: (task: Partial<Task>) => void;
-    updateTask: (id: string, updates: Partial<Task>) => void;
+    addTask: (task: NewTaskPayload) => void;
+    updateTask: (id: string, updates: UpdateTaskPayload) => void;
     toggleTaskCompletion: (id: string) => void;
     deleteTask: (id: string) => void;
+
+    // Selectors
+    getInboxTasks: () => Task[];
+    getTasksByProject: (projectId: string) => Task[];
+    getSubtasks: (parentId: string) => Task[];
 }
 
-export const useTaskStore = create<TaskState>((set) => ({
+export const useTaskStore = create<TaskState>((set, get) => ({
     tasks: [],
     isLoading: false,
     error: null,
@@ -33,20 +52,22 @@ export const useTaskStore = create<TaskState>((set) => ({
 
     setTasks: (tasks) => set({ tasks }),
 
-    addTask: (taskData: Partial<Task>) => set((state) => {
+    addTask: (taskData: NewTaskPayload) => set((state) => {
         const newTask: Task = {
             id: Math.random().toString(36).substring(2, 9),
-            content: taskData.content || 'Untitled Task',
-            description: taskData.description || '',
-            isCompleted: false,
+            title: taskData.title,
+            description: taskData.description || null,
+            completed: false,
             priority: taskData.priority || 4,
             labels: taskData.labels || [],
             projectId: taskData.projectId || 'inbox',
-            sectionId: taskData.sectionId,
-            order: state.tasks.length + 1,
+            sectionId: taskData.sectionId || null,
+            parentId: taskData.parentId || null,
+            order: taskData.order ?? state.tasks.length + 1,
+            due: taskData.due || null,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            ...taskData
+            completedAt: null
         };
         return { tasks: [newTask, ...state.tasks] };
     }),
@@ -58,12 +79,37 @@ export const useTaskStore = create<TaskState>((set) => ({
     })),
 
     toggleTaskCompletion: (id) => set((state) => ({
-        tasks: state.tasks.map((task) =>
-            task.id === id ? { ...task, isCompleted: !task.isCompleted, updatedAt: new Date().toISOString() } : task
-        ),
+        tasks: state.tasks.map((task) => {
+            if (task.id === id) {
+                const isNowCompleted = !task.completed;
+                return {
+                    ...task,
+                    completed: isNowCompleted,
+                    completedAt: isNowCompleted ? new Date().toISOString() : null,
+                    updatedAt: new Date().toISOString()
+                };
+            }
+            return task;
+        }),
     })),
 
     deleteTask: (id) => set((state) => ({
         tasks: state.tasks.filter((task) => task.id !== id),
     })),
+
+    // Selectors
+    getInboxTasks: () => {
+        const { tasks } = get();
+        return tasks.filter(task => !task.projectId || task.projectId === 'inbox');
+    },
+
+    getTasksByProject: (projectId: string) => {
+        const { tasks } = get();
+        return tasks.filter(task => task.projectId === projectId);
+    },
+
+    getSubtasks: (parentId: string) => {
+        const { tasks } = get();
+        return tasks.filter(task => task.parentId === parentId);
+    }
 }));

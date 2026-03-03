@@ -33,7 +33,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
                 }}
                 className="mt-0.5 shrink-0 focus:outline-none transition-transform active:scale-90"
             >
-                {task.isCompleted ? (
+                {task.completed ? (
                     <CheckCircle2 className="w-5 h-5 text-primary" />
                 ) : (
                     <Circle className={cn("w-5 h-5 transition-colors", priorityColors[task.priority])} />
@@ -44,9 +44,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
                 <div className="flex items-center justify-between gap-2">
                     <h4 className={cn(
                         "text-sm font-medium leading-tight truncate",
-                        task.isCompleted && "text-muted-foreground line-through opacity-60"
+                        task.completed && "text-muted-foreground line-through opacity-60"
                     )}>
-                        {task.content}
+                        {task.title}
                     </h4>
                     <TaskActions className="opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
@@ -69,9 +69,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
                         </div>
                     )}
 
-                    {task.dueDate && (
+                    {task.due && (
                         <span className="text-[10px] font-medium text-primary/70 bg-primary/5 px-1.5 py-0.5 rounded">
-                            {task.dueDate.date}
+                            {task.due.date}
                         </span>
                     )}
                 </div>

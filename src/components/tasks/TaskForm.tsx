@@ -6,9 +6,9 @@ import { cn } from '../../lib/utils';
 import { Priority } from '../../types';
 
 interface TaskFormProps {
-    onSave: (task: { content: string; priority: Priority; dueDate?: string }) => void;
+    onSave: (task: { title: string; priority: Priority; due?: string }) => void;
     onCancel: () => void;
-    initialContent?: string;
+    initialTitle?: string;
 }
 
 const priorityOptions: { value: Priority; label: string; color: string }[] = [
@@ -18,8 +18,8 @@ const priorityOptions: { value: Priority; label: string; color: string }[] = [
     { value: 4, label: 'Priority 4', color: 'text-muted-foreground/40' },
 ];
 
-export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialContent = '' }) => {
-    const [content, setContent] = useState(initialContent);
+export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTitle = '' }) => {
+    const [title, setTitle] = useState(initialTitle);
     const [priority, setPriority] = useState<Priority>(4);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -29,14 +29,14 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialCon
 
     const handleSubmit = (e?: React.FormEvent) => {
         e?.preventDefault();
-        if (!content.trim()) return;
+        if (!title.trim()) return;
 
         onSave({
-            content: content.trim(),
+            title: title.trim(),
             priority,
         });
 
-        setContent('');
+        setTitle('');
         setPriority(4);
     };
 
@@ -56,8 +56,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialCon
                 <input
                     ref={inputRef}
                     type="text"
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Task name"
                     className="w-full bg-transparent border-none outline-none text-base font-medium placeholder:text-muted-foreground/40 text-foreground"
@@ -110,7 +110,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialCon
                         </Button>
                         <Button
                             type="submit"
-                            disabled={!content.trim()}
+                            disabled={!title.trim()}
                             size="sm"
                             className="h-8 px-4 rounded-lg bg-primary text-primary-foreground shadow-soft hover:shadow-premium transition-all duration-300 gap-2"
                         >

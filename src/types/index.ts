@@ -65,21 +65,24 @@ export interface Section {
 // --- Task ---
 export interface Task {
     id: string;
-    projectId: string;
+    projectId?: string | null;
     sectionId?: string | null;
+    parentId?: string | null; // For infinite nesting/sub-tasks
 
-    content: string; // The primary task title/description
-    description: string; // Optional detailed description markdown
+    title: string; // The primary task title
+    description?: string | null; // Optional detailed description markdown
 
-    isCompleted: boolean;
+    completed: boolean;
     priority: Priority;
 
-    dueDate?: DueDate | null;
+    due?: DueDate | null;
     labels: string[]; // Array of Label IDs
 
-    order: number; // Ordering within the project/section
-    parentId?: string | null; // For infinite nesting/sub-tasks
+    order?: number; // Ordering within the project/section
+    durationMinutes?: number | null; // Estimated time
+    deadline?: string | null; // Hard deadline (ISO string)
 
     createdAt: string;
     updatedAt: string;
+    completedAt?: string | null;
 }

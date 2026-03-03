@@ -26,9 +26,9 @@ export const Today = () => {
     });
 
     // Filter tasks
-    const activeTasks = tasks.filter(t => !t.isCompleted);
-    const overdueTasks = activeTasks.filter(t => t.dueDate?.date && isOverdue(t.dueDate.date));
-    const todayTasks = activeTasks.filter(t => t.dueDate?.date && isToday(t.dueDate.date));
+    const activeTasks = tasks.filter(t => !t.completed);
+    const overdueTasks = activeTasks.filter(t => t.due?.date && isOverdue(t.due.date));
+    const todayTasks = activeTasks.filter(t => t.due?.date && isToday(t.due.date));
 
     if (isLoading && tasks.length === 0) {
         return (

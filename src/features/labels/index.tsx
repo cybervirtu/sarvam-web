@@ -19,7 +19,7 @@ export const Labels = () => {
 
     // Helper to count tasks for a label
     const getTaskCount = (labelId: string) => {
-        return tasks.filter(t => t.labels.includes(labelId) && !t.isCompleted).length;
+        return tasks.filter(t => t.labels.includes(labelId) && !t.completed).length;
     };
 
     if (isLoading && labels.length === 0) {

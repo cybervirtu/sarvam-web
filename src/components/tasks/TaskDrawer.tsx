@@ -17,7 +17,7 @@ export const TaskDrawer = () => {
 
     useEffect(() => {
         if (task) {
-            setTitle(task.content);
+            setTitle(task.title);
             setDescription(task.description || '');
         }
     }, [task]);
@@ -25,8 +25,8 @@ export const TaskDrawer = () => {
     if (!activeTaskId || !task) return null;
 
     const handleTitleBlur = () => {
-        if (title.trim() !== task.content) {
-            updateTask(task.id, { content: title.trim() });
+        if (title.trim() !== task.title) {
+            updateTask(task.id, { title: title.trim() });
         }
     };
 
@@ -73,13 +73,13 @@ export const TaskDrawer = () => {
                             className="text-muted-foreground hover:text-foreground"
                             onClick={() => toggleTaskCompletion(task.id)}
                         >
-                            {task.isCompleted ? (
+                            {task.completed ? (
                                 <CheckCircle2 className="w-5 h-5 text-primary" />
                             ) : (
                                 <Circle className="w-5 h-5" />
                             )}
                             <span className="ml-2 text-xs font-medium uppercase tracking-wider">
-                                {task.isCompleted ? 'Completed' : 'Mark Complete'}
+                                {task.completed ? 'Completed' : 'Mark Complete'}
                             </span>
                         </Button>
                     </div>
@@ -146,7 +146,7 @@ export const TaskDrawer = () => {
                                 className="w-full h-10 justify-start gap-3 rounded-xl border-border/40 hover:bg-muted text-xs font-medium"
                             >
                                 <Calendar className="w-4 h-4 text-primary" />
-                                <span>{task.dueDate?.date || 'Set due date'}</span>
+                                <span>{task.due?.date || 'Set due date'}</span>
                             </Button>
                         </div>
                     </div>

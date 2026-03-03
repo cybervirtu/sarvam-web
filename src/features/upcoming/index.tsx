@@ -19,11 +19,11 @@ export const Upcoming = () => {
     }, [tasks.length, projects.length, fetchTasks, fetchProjectsAndLabels]);
 
     const next7Days = getNext7Days();
-    const activeTasks = tasks.filter(t => !t.isCompleted);
+    const activeTasks = tasks.filter(t => !t.completed);
 
     // Group tasks by date
     const tasksByDate = next7Days.reduce((acc, date) => {
-        acc[date] = activeTasks.filter(t => t.dueDate?.date === date);
+        acc[date] = activeTasks.filter(t => t.due?.date === date);
         return acc;
     }, {} as Record<string, typeof tasks>);
 
