@@ -6,7 +6,7 @@ import { cn } from '../../lib/utils';
 import { Priority } from '../../types';
 
 interface TaskFormProps {
-    onSave: (task: { title: string; priority: Priority; due?: string }) => void;
+    onSave: (task: { title: string; description?: string; priority: Priority; due?: string }) => void;
     onCancel: () => void;
     initialTitle?: string;
 }
@@ -20,6 +20,7 @@ const priorityOptions: { value: Priority; label: string; color: string }[] = [
 
 export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTitle = '' }) => {
     const [title, setTitle] = useState(initialTitle);
+    const [description, setDescription] = useState('');
     const [priority, setPriority] = useState<Priority>(4);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -33,10 +34,12 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
 
         onSave({
             title: title.trim(),
+            description: description.trim() || undefined,
             priority,
         });
 
         setTitle('');
+        setDescription('');
         setPriority(4);
     };
 
@@ -64,6 +67,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
                 />
 
                 <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
                     placeholder="Description"
                     className="w-full bg-transparent border-none outline-none text-sm text-muted-foreground placeholder:text-muted-foreground/30 resize-none min-h-[60px]"
                 />
