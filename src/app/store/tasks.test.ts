@@ -26,6 +26,25 @@ describe('Task Store', () => {
         updatedAt: new Date().toISOString()
     });
 
+    describe('fetchTasks / Persistence', () => {
+        it('should fetch from mocks if store is completely empty', async () => {
+            expect(useTaskStore.getState().tasks).toHaveLength(0);
+            await useTaskStore.getState().fetchTasks();
+            expect(useTaskStore.getState().tasks.length).toBeGreaterThan(0);
+        });
+
+        it('should NOT overwrite existing tasks if store is already hydrated', async () => {
+            const hydratedTask = createMockTask('hydrated-1', 'Hydrated Task');
+            useTaskStore.getState().setTasks([hydratedTask]);
+
+            await useTaskStore.getState().fetchTasks();
+
+            const state = useTaskStore.getState();
+            expect(state.tasks).toHaveLength(1);
+            expect(state.tasks[0].id).toBe('hydrated-1');
+        });
+    });
+
     describe('addTask', () => {
         it('should add a new task to the store', () => {
             const task = createMockTask('t1', 'Buy groceries');
