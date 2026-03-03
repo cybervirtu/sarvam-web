@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTaskStore } from '../../app/store';
 import { TaskList } from '../../components/tasks/TaskList';
 import { ListFilter, LayoutGrid, Plus } from 'lucide-react';

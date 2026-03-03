@@ -22,6 +22,14 @@ export const TaskDrawer = () => {
         }
     }, [task]);
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') closeTaskDrawer();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [closeTaskDrawer]);
+
     if (!activeTaskId || !task) return null;
 
     const handleTitleBlur = () => {
@@ -46,6 +54,19 @@ export const TaskDrawer = () => {
             closeTaskDrawer();
         }
     };
+
+    const toggleLabel = (labelId: string) => {
+        const newLabels = task.labels.includes(labelId)
+            ? task.labels.filter(id => id !== labelId)
+            : [...task.labels, labelId];
+        updateTask(task.id, { labels: newLabels });
+    };
+
+    const availableLabels = [
+        { id: 'l1', name: 'Work' },
+        { id: 'l2', name: 'Personal' },
+        { id: 'l3', name: 'Urgent' }
+    ];
 
     const priorityOptions: { value: Priority; label: string; color: string }[] = [
         { value: 1, label: 'Priority 1', color: 'text-red-500' },
@@ -140,14 +161,19 @@ export const TaskDrawer = () => {
 
                         <div className="space-y-2">
                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Due Date</span>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="w-full h-10 justify-start gap-3 rounded-xl border-border/40 hover:bg-muted text-xs font-medium"
-                            >
-                                <Calendar className="w-4 h-4 text-primary" />
+                            <div className="relative flex items-center w-full h-10 rounded-xl border border-border/40 hover:bg-muted justify-start px-3 text-xs font-medium cursor-pointer overflow-hidden group transition-colors">
+                                <Calendar className="w-4 h-4 text-primary mr-3 shrink-0" />
+                                <input
+                                    type="date"
+                                    value={task.due?.date || ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        updateTask(task.id, { due: val ? { date: val, isRecurring: false } : undefined });
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
                                 <span>{task.due?.date || 'Set due date'}</span>
-                            </Button>
+                            </div>
                         </div>
                     </div>
 
@@ -158,15 +184,24 @@ export const TaskDrawer = () => {
                             <span>Labels</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {task.labels.map(labelId => (
-                                <div key={labelId} className="flex items-center gap-1.5 bg-primary/5 text-primary px-3 py-1 rounded-full text-xs font-medium border border-primary/10">
-                                    <Hash className="w-3 h-3" />
-                                    {labelId}
-                                </div>
-                            ))}
-                            <button className="flex items-center gap-1.5 border border-dashed border-border/60 text-muted-foreground px-3 py-1 rounded-full text-xs font-medium hover:border-primary/40 hover:text-primary transition-all">
-                                <span>Add label</span>
-                            </button>
+                            {availableLabels.map(label => {
+                                const isActive = task.labels.includes(label.id);
+                                return (
+                                    <button
+                                        key={label.id}
+                                        onClick={() => toggleLabel(label.id)}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-all duration-200",
+                                            isActive
+                                                ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/15"
+                                                : "bg-muted/30 text-muted-foreground border-transparent hover:border-border/50 hover:bg-muted/50"
+                                        )}
+                                    >
+                                        <Hash className="w-3 h-3 opacity-70" />
+                                        {label.name}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
