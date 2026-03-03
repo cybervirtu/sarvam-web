@@ -93,9 +93,21 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         }),
     })),
 
-    deleteTask: (id) => set((state) => ({
-        tasks: state.tasks.filter((task) => task.id !== id),
-    })),
+    deleteTask: (id) => set((state) => {
+        // Collect all IDs to delete (target task + its subtasks)
+        const idsToDelete = new Set<string>([id]);
+
+        // Simple 1-level cascade for now based on requirements
+        state.tasks.forEach(task => {
+            if (task.parentId === id) {
+                idsToDelete.add(task.id);
+            }
+        });
+
+        return {
+            tasks: state.tasks.filter((task) => !idsToDelete.has(task.id)),
+        };
+    }),
 
     // Selectors
     getInboxTasks: () => {

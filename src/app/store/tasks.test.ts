@@ -97,6 +97,28 @@ describe('Task Store', () => {
             expect(remainingTasks).toHaveLength(1);
             expect(remainingTasks[0].id).toBe(task2Id);
         });
+
+        it('should cascade delete subtasks when a parent task is deleted', () => {
+            const parentTask = createMockTask('p1', 'Parent Task');
+            const subTask1 = createMockTask('s1', 'Subtask 1');
+            subTask1.parentId = 'p1';
+            const subTask2 = createMockTask('s2', 'Subtask 2');
+            subTask2.parentId = 'p1';
+            const unrelatedTask = createMockTask('u1', 'Unrelated Task');
+
+            useTaskStore.getState().setTasks([parentTask, subTask1, subTask2, unrelatedTask]);
+
+            // Verify initial state
+            expect(useTaskStore.getState().tasks).toHaveLength(4);
+
+            // Delete parent
+            useTaskStore.getState().deleteTask('p1');
+
+            // Verify cascading delete
+            const remainingTasks = useTaskStore.getState().tasks;
+            expect(remainingTasks).toHaveLength(1);
+            expect(remainingTasks[0].id).toBe('u1');
+        });
     });
 
     describe('Selectors', () => {

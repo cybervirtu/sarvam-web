@@ -49,7 +49,7 @@ export const TaskDrawer = () => {
     };
 
     const handleDelete = () => {
-        if (window.confirm('Are you sure you want to delete this task?')) {
+        if (window.confirm('Are you sure you want to delete this task? Any sub-tasks will also be deleted.')) {
             deleteTask(task.id);
             closeTaskDrawer();
         }
