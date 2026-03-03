@@ -5,6 +5,7 @@ import { IconButton } from '../common/IconButton';
 import { Button } from '../common/Button';
 import { cn } from '../../lib/utils';
 import { Priority } from '../../types';
+import { PRIORITY_OPTIONS, AVAILABLE_LABELS } from './constants';
 
 export const TaskDrawer = () => {
     const { activeTaskId, closeTaskDrawer } = useUIStore();
@@ -14,11 +15,13 @@ export const TaskDrawer = () => {
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
     useEffect(() => {
         if (task) {
             setTitle(task.title);
             setDescription(task.description || '');
+            setIsConfirmingDelete(false);
         }
     }, [task]);
 
@@ -48,11 +51,9 @@ export const TaskDrawer = () => {
         updateTask(task.id, { priority });
     };
 
-    const handleDelete = () => {
-        if (window.confirm('Are you sure you want to delete this task? Any sub-tasks will also be deleted.')) {
-            deleteTask(task.id);
-            closeTaskDrawer();
-        }
+    const confirmDelete = () => {
+        deleteTask(task.id);
+        closeTaskDrawer();
     };
 
     const toggleLabel = (labelId: string) => {
@@ -61,19 +62,6 @@ export const TaskDrawer = () => {
             : [...task.labels, labelId];
         updateTask(task.id, { labels: newLabels });
     };
-
-    const availableLabels = [
-        { id: 'l1', name: 'Work' },
-        { id: 'l2', name: 'Personal' },
-        { id: 'l3', name: 'Urgent' }
-    ];
-
-    const priorityOptions: { value: Priority; label: string; color: string }[] = [
-        { value: 1, label: 'Priority 1', color: 'text-red-500' },
-        { value: 2, label: 'Priority 2', color: 'text-orange-500' },
-        { value: 3, label: 'Priority 3', color: 'text-blue-500' },
-        { value: 4, label: 'Priority 4', color: 'text-muted-foreground/40' },
-    ];
 
     return (
         <>
@@ -105,8 +93,32 @@ export const TaskDrawer = () => {
                         </Button>
                     </div>
                     <div className="flex items-center gap-1">
-                        <IconButton icon={Trash2} onClick={handleDelete} title="Delete Task" className="text-muted-foreground hover:text-red-500" />
-                        <IconButton icon={X} onClick={closeTaskDrawer} title="Close" />
+                        {isConfirmingDelete ? (
+                            <div className="flex items-center gap-2 bg-destructive/10 px-3 py-1.5 rounded-lg border border-destructive/20 animate-in fade-in zoom-in-95 duration-200">
+                                <span className="text-xs font-medium text-destructive whitespace-nowrap">Delete task?</span>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 px-2 text-xs hover:bg-destructive/20 text-destructive"
+                                    onClick={confirmDelete}
+                                >
+                                    Yes
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 px-2 text-xs hover:bg-muted text-muted-foreground"
+                                    onClick={() => setIsConfirmingDelete(false)}
+                                >
+                                    No
+                                </Button>
+                            </div>
+                        ) : (
+                            <>
+                                <IconButton icon={Trash2} onClick={() => setIsConfirmingDelete(true)} title="Delete Task" className="text-muted-foreground hover:text-red-500" />
+                                <IconButton icon={X} onClick={closeTaskDrawer} title="Close" />
+                            </>
+                        )}
                     </div>
                 </header>
 
@@ -142,7 +154,7 @@ export const TaskDrawer = () => {
                         <div className="space-y-2">
                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Priority</span>
                             <div className="flex items-center bg-muted/40 p-1 rounded-xl border border-border/20 w-fit">
-                                {priorityOptions.map((opt) => (
+                                {PRIORITY_OPTIONS.map((opt) => (
                                     <IconButton
                                         key={opt.value}
                                         icon={Flag}
@@ -154,6 +166,8 @@ export const TaskDrawer = () => {
                                                 : "text-muted-foreground/30 hover:text-muted-foreground"
                                         )}
                                         title={opt.label}
+                                        aria-label={`Set ${opt.label}`}
+                                        aria-pressed={task.priority === opt.value}
                                     />
                                 ))}
                             </div>
@@ -184,12 +198,14 @@ export const TaskDrawer = () => {
                             <span>Labels</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            {availableLabels.map(label => {
+                            {AVAILABLE_LABELS.map(label => {
                                 const isActive = task.labels.includes(label.id);
                                 return (
                                     <button
                                         key={label.id}
                                         onClick={() => toggleLabel(label.id)}
+                                        aria-pressed={isActive}
+                                        aria-label={`Toggle label ${label.name}`}
                                         className={cn(
                                             "flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-all duration-200",
                                             isActive

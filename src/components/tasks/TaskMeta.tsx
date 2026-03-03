@@ -1,7 +1,7 @@
-import React from 'react';
 import { Priority, DueDate } from '../../types';
 import { Hash, Flag, Calendar } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { PRIORITY_BADGE_COLORS, resolveLabelName } from './constants';
 
 interface TaskMetaProps {
     priority: Priority;
@@ -9,23 +9,6 @@ interface TaskMetaProps {
     due?: DueDate | null;
     className?: string;
 }
-
-const priorityColors: Record<number, string> = {
-    1: 'text-red-600 bg-red-500/10',
-    2: 'text-orange-500 bg-orange-500/10',
-    3: 'text-blue-500 bg-blue-500/10',
-    4: 'text-muted-foreground/50 bg-muted/50',
-};
-
-// Simple mock resolver to mimic actual label state fetching
-const resolveLabelName = (labelId: string) => {
-    switch (labelId) {
-        case 'l1': return 'Work';
-        case 'l2': return 'Personal';
-        case 'l3': return 'Urgent';
-        default: return 'Label';
-    }
-};
 
 export const TaskMeta: React.FC<TaskMetaProps> = ({ priority, labels, due, className }) => {
     // Determine if we need to show anything to avoid returning an empty container
@@ -53,7 +36,7 @@ export const TaskMeta: React.FC<TaskMetaProps> = ({ priority, labels, due, class
 
             {/* Show explicit priority indicators for P1-P3 */}
             {priority < 4 && (
-                <div className={cn("flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md font-medium transition-colors cursor-default", priorityColors[priority])}>
+                <div className={cn("flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md font-medium transition-colors cursor-default", PRIORITY_BADGE_COLORS[priority])}>
                     <Flag className="w-2.5 h-2.5" />
                     P{priority}
                 </div>

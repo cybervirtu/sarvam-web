@@ -33,11 +33,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
                     toggleTaskCompletion(task.id);
                 }}
                 className="mt-0.5 shrink-0 focus:outline-none transition-transform active:scale-90"
+                aria-label={task.completed ? "Mark as uncompleted" : "Mark as completed"}
             >
                 {task.completed ? (
-                    <CheckCircle2 className="w-5 h-5 text-primary" />
+                    <CheckCircle2 className="w-5 h-5 text-primary" aria-hidden="true" />
                 ) : (
-                    <Circle className={cn("w-5 h-5 transition-colors", priorityColors[task.priority])} />
+                    <Circle className={cn("w-5 h-5 transition-colors", priorityColors[task.priority])} aria-hidden="true" />
                 )}
             </button>
 

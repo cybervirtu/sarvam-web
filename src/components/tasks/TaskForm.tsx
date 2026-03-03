@@ -1,22 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Calendar, Flag, CornerDownLeft } from 'lucide-react';
 import { Button } from '../common/Button';
 import { IconButton } from '../common/IconButton';
 import { cn } from '../../lib/utils';
 import { Priority } from '../../types';
+import { PRIORITY_OPTIONS } from './constants';
 
 interface TaskFormProps {
     onSave: (task: { title: string; description?: string; priority: Priority; due?: string }) => void;
     onCancel: () => void;
     initialTitle?: string;
 }
-
-const priorityOptions: { value: Priority; label: string; color: string }[] = [
-    { value: 1, label: 'Priority 1', color: 'text-red-500' },
-    { value: 2, label: 'Priority 2', color: 'text-orange-500' },
-    { value: 3, label: 'Priority 3', color: 'text-blue-500' },
-    { value: 4, label: 'Priority 4', color: 'text-muted-foreground/40' },
-];
 
 export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTitle = '' }) => {
     const [title, setTitle] = useState(initialTitle);
@@ -86,7 +80,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
                         </Button>
 
                         <div className="flex items-center bg-muted/40 p-0.5 rounded-lg border border-border/20">
-                            {priorityOptions.map((opt) => (
+                            {PRIORITY_OPTIONS.map((opt) => (
                                 <IconButton
                                     key={opt.value}
                                     icon={Flag}
@@ -98,6 +92,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
                                             : "text-muted-foreground/40 hover:text-muted-foreground hover:bg-background/50"
                                     )}
                                     title={opt.label}
+                                    aria-label={`Select ${opt.label}`}
+                                    aria-pressed={priority === opt.value}
                                 />
                             ))}
                         </div>
