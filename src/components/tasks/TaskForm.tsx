@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { Calendar, Flag, CornerDownLeft } from 'lucide-react';
+import { Flag, CornerDownLeft } from 'lucide-react';
 import { Button } from '../common/Button';
 import { IconButton } from '../common/IconButton';
 import { cn } from '../../lib/utils';
 import { Priority } from '../../types';
 import { PRIORITY_OPTIONS } from './constants';
+import { DatePicker } from '../common/DatePicker';
 
 interface TaskFormProps {
-    onSave: (task: { title: string; description?: string; priority: Priority; due?: string }) => void;
+    onSave: (task: { title: string; description?: string; priority: Priority; due?: { date: string; isRecurring: boolean } | null }) => void;
     onCancel: () => void;
     initialTitle?: string;
 }
@@ -16,6 +17,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
     const [title, setTitle] = useState(initialTitle);
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState<Priority>(4);
+    const [dueDate, setDueDate] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -30,11 +32,13 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
             title: title.trim(),
             description: description.trim() || undefined,
             priority,
+            due: dueDate ? { date: dueDate, isRecurring: false } : null,
         });
 
         setTitle('');
         setDescription('');
         setPriority(4);
+        setDueDate(null);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -69,15 +73,12 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
 
                 <div className="flex items-center justify-between pt-2 border-t border-border/40">
                     <div className="flex items-center gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-8 px-3 text-xs gap-2 rounded-lg border-border/40 hover:bg-muted"
-                        >
-                            <Calendar className="w-3.5 h-3.5 text-primary" />
-                            <span>Due date</span>
-                        </Button>
+                        <DatePicker
+                            value={dueDate}
+                            onChange={(val) => setDueDate(val)}
+                            placeholder="Due date"
+                            className="h-8 px-3 rounded-lg border border-border/40 hover:bg-muted"
+                        />
 
                         <div className="flex items-center bg-muted/40 p-0.5 rounded-lg border border-border/20">
                             {PRIORITY_OPTIONS.map((opt) => (

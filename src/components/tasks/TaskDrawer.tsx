@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { X, Calendar, Flag, Hash, Trash2, CheckCircle2, Circle } from 'lucide-react';
+import { X, Flag, Hash, Trash2, CheckCircle2, Circle } from 'lucide-react';
 import { useTaskStore, useUIStore } from '../../app/store';
 import { IconButton } from '../common/IconButton';
 import { Button } from '../common/Button';
 import { cn } from '../../lib/utils';
 import { Priority } from '../../types';
 import { PRIORITY_OPTIONS, AVAILABLE_LABELS } from './constants';
+import { DatePicker } from '../common/DatePicker';
 
 export const TaskDrawer = () => {
     const { activeTaskId, closeTaskDrawer } = useUIStore();
@@ -68,11 +69,16 @@ export const TaskDrawer = () => {
             {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-background/40 backdrop-blur-[2px] z-40 animate-in fade-in duration-300"
-                onClick={closeTaskDrawer}
+                onClick={(e) => {
+                    if (e.target === e.currentTarget) closeTaskDrawer();
+                }}
             />
 
             {/* Drawer */}
-            <div className="fixed right-0 top-0 h-full w-[450px] bg-background border-l border-border shadow-premium z-50 animate-in slide-in-from-right duration-500 ease-out flex flex-col">
+            <div
+                className="fixed right-0 top-0 h-full w-[450px] bg-background border-l border-border shadow-premium z-50 animate-in slide-in-from-right duration-500 ease-out flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
                 <header className="flex items-center justify-between p-4 border-b border-border/50">
                     <div className="flex items-center gap-2">
@@ -175,19 +181,13 @@ export const TaskDrawer = () => {
 
                         <div className="space-y-2">
                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Due Date</span>
-                            <div className="relative flex items-center w-full h-10 rounded-xl border border-border/40 hover:bg-muted justify-start px-3 text-xs font-medium cursor-pointer overflow-hidden group transition-colors">
-                                <Calendar className="w-4 h-4 text-primary mr-3 shrink-0" />
-                                <input
-                                    type="date"
-                                    value={task.due?.date || ''}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        updateTask(task.id, { due: val ? { date: val, isRecurring: false } : undefined });
-                                    }}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                />
-                                <span>{task.due?.date || 'Set due date'}</span>
-                            </div>
+                            <DatePicker
+                                value={task.due?.date || null}
+                                onChange={(val) => {
+                                    updateTask(task.id, { due: val ? { date: val, isRecurring: false } : null });
+                                }}
+                                className="w-full h-10 rounded-xl border border-border/40 hover:bg-muted px-3 transition-colors text-xs"
+                            />
                         </div>
                     </div>
 
