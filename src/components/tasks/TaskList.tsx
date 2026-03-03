@@ -10,12 +10,14 @@ interface TaskListProps {
     tasks: Task[];
     isLoading?: boolean;
     emptyMessage?: string;
+    hideAddButton?: boolean;
 }
 
 export const TaskList: React.FC<TaskListProps> = ({
     tasks,
     isLoading,
     emptyMessage = "No tasks found.",
+    hideAddButton = false,
 }) => {
     const [isAdding, setIsAdding] = useState(false);
     const addTask = useTaskStore((state) => state.addTask);
@@ -38,7 +40,7 @@ export const TaskList: React.FC<TaskListProps> = ({
         return (
             <TaskEmptyState
                 message={emptyMessage}
-                onAction={() => setIsAdding(true)}
+                onAction={hideAddButton ? undefined : () => setIsAdding(true)}
             />
         );
     }
@@ -49,23 +51,25 @@ export const TaskList: React.FC<TaskListProps> = ({
                 <TaskItem key={task.id} task={task} />
             ))}
 
-            {isAdding ? (
-                <div className="mt-3">
-                    <TaskForm
-                        onSave={handleSave}
-                        onCancel={() => setIsAdding(false)}
-                    />
-                </div>
-            ) : (
-                <button
-                    onClick={() => setIsAdding(true)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all duration-200 mt-2 group"
-                >
-                    <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                    <span className="text-sm font-medium text-muted-foreground/60 group-hover:text-primary transition-colors">
-                        Add task
-                    </span>
-                </button>
+            {!hideAddButton && (
+                isAdding ? (
+                    <div className="mt-3">
+                        <TaskForm
+                            onSave={handleSave}
+                            onCancel={() => setIsAdding(false)}
+                        />
+                    </div>
+                ) : (
+                    <button
+                        onClick={() => setIsAdding(true)}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all duration-200 mt-2 group"
+                    >
+                        <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <span className="text-sm font-medium text-muted-foreground/60 group-hover:text-primary transition-colors">
+                            Add task
+                        </span>
+                    </button>
+                )
             )}
         </div>
     );

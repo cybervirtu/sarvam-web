@@ -5,7 +5,9 @@ import { ListFilter, LayoutGrid } from 'lucide-react';
 import { IconButton } from '../../components/common/IconButton';
 
 export const Inbox = () => {
-    const { tasks, isLoading, fetchTasks } = useTaskStore();
+    // We destructure tasks to ensure reactivity, then use the selector
+    const { tasks, isLoading, fetchTasks, getInboxTasks } = useTaskStore();
+    const inboxTasks = getInboxTasks();
 
     useEffect(() => {
         if (tasks.length === 0) {
@@ -30,9 +32,10 @@ export const Inbox = () => {
             </header>
 
             <TaskList
-                tasks={tasks}
+                tasks={inboxTasks}
                 isLoading={isLoading}
                 emptyMessage="No tasks in your inbox. Relax!"
+                hideAddButton={true}
             />
         </div>
     );
