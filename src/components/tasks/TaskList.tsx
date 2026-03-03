@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Task, Priority } from '../../types';
 import { TaskItem } from './TaskItem';
 import { TaskForm } from './TaskForm';
-import { Loader2, Plus } from 'lucide-react';
-import { Button } from '../common/Button';
+import { Plus, Loader2 } from 'lucide-react';
 import { useTaskStore } from '../../app/store';
+import { TaskEmptyState } from './TaskEmptyState';
 
 interface TaskListProps {
     tasks: Task[];
@@ -36,13 +36,10 @@ export const TaskList: React.FC<TaskListProps> = ({
 
     if (tasks.length === 0 && !isAdding) {
         return (
-            <div className="text-center py-20 bg-muted/20 rounded-3xl border border-dashed border-border/60 mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <p className="text-sm text-muted-foreground">{emptyMessage}</p>
-                <Button onClick={() => setIsAdding(true)} className="mt-4 gap-2 shadow-soft">
-                    <Plus className="w-4 h-4" />
-                    Create Task
-                </Button>
-            </div>
+            <TaskEmptyState
+                message={emptyMessage}
+                onAction={() => setIsAdding(true)}
+            />
         );
     }
 

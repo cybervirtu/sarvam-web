@@ -1,8 +1,9 @@
 import React from 'react';
 import { Task } from '../../types';
 import { cn } from '../../lib/utils';
-import { CheckCircle2, Circle, Hash } from 'lucide-react';
+import { CheckCircle2, Circle } from 'lucide-react';
 import { TaskActions } from './TaskActions';
+import { TaskMeta } from './TaskMeta';
 
 import { useTaskStore, useUIStore } from '../../app/store';
 
@@ -57,24 +58,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
                     </p>
                 )}
 
-                <div className="flex items-center gap-3 mt-2.5">
-                    {task.labels.length > 0 && (
-                        <div className="flex items-center gap-1.5">
-                            {task.labels.map(labelId => (
-                                <div key={labelId} className="flex items-center gap-1 text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-medium">
-                                    <Hash className="w-2.5 h-2.5" />
-                                    {labelId === 'l1' ? 'Work' : labelId === 'l2' ? 'Personal' : 'Urgent'}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {task.due && (
-                        <span className="text-[10px] font-medium text-primary/70 bg-primary/5 px-1.5 py-0.5 rounded">
-                            {task.due.date}
-                        </span>
-                    )}
-                </div>
+                <TaskMeta
+                    priority={task.priority}
+                    labels={task.labels}
+                    due={task.due}
+                    className="mt-2.5 opacity-80 group-hover:opacity-100 transition-opacity"
+                />
             </div>
         </div>
     );
