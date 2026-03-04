@@ -20,6 +20,10 @@ interface ProjectState {
     addLabel: (label: Label) => void;
     updateLabel: (id: string, updates: Partial<Label>) => void;
     deleteLabel: (id: string) => void;
+    setProjects: (projects: Project[]) => void;
+
+    // Selectors
+    getInboxProjectId: () => string | undefined;
 }
 
 export const useProjectStore = create<ProjectState>((set) => ({
@@ -85,4 +89,11 @@ export const useProjectStore = create<ProjectState>((set) => ({
     deleteLabel: (id) => set((state) => ({
         labels: state.labels.filter((l) => l.id !== id)
     })),
+
+    setProjects: (projects) => set({ projects }),
+
+    getInboxProjectId: (): string | undefined => {
+        const state = useProjectStore.getState() as any;
+        return state.projects.find((p: Project) => p.isInbox)?.id;
+    },
 }));

@@ -99,7 +99,7 @@ const dateAhead = (days: number) => {
 export const MOCK_TASKS: Task[] = [
     {
         id: '1',
-        projectId: 'inbox',
+        projectId: 'p1',
         title: 'Reply to client email',
         description: 'Need to get back to Sarah regarding the Q3 targets.',
         completed: false,
@@ -115,7 +115,7 @@ export const MOCK_TASKS: Task[] = [
     },
     {
         id: '2',
-        projectId: 'inbox',
+        projectId: 'p1',
         title: 'Buy groceries',
         description: 'Milk, Eggs, Bread, and Coffee.',
         completed: false,
@@ -190,7 +190,7 @@ export const MOCK_TASKS: Task[] = [
     },
     {
         id: '7',
-        projectId: 'inbox',
+        projectId: 'p1',
         title: 'Pick up dry cleaning',
         description: '',
         completed: false,

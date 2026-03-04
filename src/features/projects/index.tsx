@@ -28,17 +28,17 @@ export const Projects = () => {
         }
     }, [id, fetchSections]);
 
-    const activeProject = projects.find(p => p.id === id);
-    const projectTasks = tasks.filter(t => t.projectId === id);
+    const activeProject = projects.find((p: any) => p.id === id);
+    const projectTasks = tasks.filter((t: any) => t.projectId === id);
 
     // Group tasks by section
-    const tasksBySection = sections.reduce((acc, section) => {
-        acc[section.id] = projectTasks.filter(t => t.sectionId === section.id);
+    const tasksBySection = sections.reduce((acc: Record<string, typeof tasks>, section: any) => {
+        acc[section.id] = projectTasks.filter((t: any) => t.sectionId === section.id);
         return acc;
     }, {} as Record<string, typeof tasks>);
 
     // Tasks without a section
-    const unsectionedTasks = projectTasks.filter(t => !t.sectionId);
+    const unsectionedTasks = projectTasks.filter((t: any) => !t.sectionId);
 
     if (isProjectLoading && projects.length === 0) {
         return (
@@ -62,7 +62,7 @@ export const Projects = () => {
                 </header>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {projects.filter(p => !p.isInbox).map(project => (
+                    {projects.filter((p: any) => !p.isInbox).map((project: any) => (
                         <div
                             key={project.id}
                             className="group p-6 rounded-3xl bg-muted/20 border border-border/50 hover:bg-muted/40 hover:border-primary/20 transition-all duration-300 cursor-pointer"
@@ -79,7 +79,7 @@ export const Projects = () => {
                             </div>
                             <h3 className="text-lg font-bold mb-1">{project.name}</h3>
                             <p className="text-xs text-muted-foreground">
-                                {tasks.filter(t => t.projectId === project.id).length} tasks
+                                {tasks.filter((t: any) => t.projectId === project.id).length} tasks
                             </p>
                         </div>
                     ))}
@@ -148,7 +148,7 @@ export const Projects = () => {
                 )}
 
                 {/* Sections */}
-                {sections.map(section => (
+                {sections.map((section: any) => (
                     <SectionList
                         key={section.id}
                         section={section}

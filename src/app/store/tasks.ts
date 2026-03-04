@@ -3,6 +3,7 @@ import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { Task, DueDate, Priority } from '../../types';
 import { getTasks } from '../../services/mocks';
 import { debounce } from '../../utils/debounce';
+import { useProjectStore } from './projects';
 
 export type NewTaskPayload = {
     title: string;
@@ -80,7 +81,7 @@ export const useTaskStore = create<TaskState>()(
                     completed: false,
                     priority: taskData.priority || 4,
                     labels: taskData.labels || [],
-                    projectId: taskData.projectId || 'inbox',
+                    projectId: taskData.projectId || useProjectStore.getState().getInboxProjectId() || 'p1',
                     sectionId: taskData.sectionId || null,
                     parentId: taskData.parentId || null,
                     order: taskData.order ?? state.tasks.length + 1,
@@ -132,7 +133,8 @@ export const useTaskStore = create<TaskState>()(
             // Selectors
             getInboxTasks: () => {
                 const { tasks } = get();
-                return tasks.filter(task => !task.projectId || task.projectId === 'inbox');
+                const inboxId = useProjectStore.getState().getInboxProjectId();
+                return tasks.filter(task => task.projectId === inboxId);
             },
 
             getTasksByProject: (projectId: string) => {

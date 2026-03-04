@@ -1,14 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
-import { Flag, CornerDownLeft } from 'lucide-react';
+import { Flag, CornerDownLeft, Hash } from 'lucide-react';
 import { Button } from '../common/Button';
 import { IconButton } from '../common/IconButton';
 import { cn } from '../../lib/utils';
 import { Priority } from '../../types';
-import { PRIORITY_OPTIONS } from './constants';
+import { PRIORITY_OPTIONS, AVAILABLE_LABELS } from './constants';
 import { DatePicker } from '../common/DatePicker';
 
 interface TaskFormProps {
-    onSave: (task: { title: string; description?: string; priority: Priority; due?: { date: string; isRecurring: boolean } | null }) => void;
+    onSave: (task: {
+        title: string;
+        description?: string;
+        priority: Priority;
+        due?: { date: string; isRecurring: boolean } | null;
+        labels?: string[];
+    }) => void;
     onCancel: () => void;
     initialTitle?: string;
 }
@@ -18,6 +24,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState<Priority>(4);
     const [dueDate, setDueDate] = useState<string | null>(null);
+    const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -33,12 +40,14 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
             description: description.trim() || undefined,
             priority,
             due: dueDate ? { date: dueDate, isRecurring: false } : null,
+            labels: selectedLabels,
         });
 
         setTitle('');
         setDescription('');
         setPriority(4);
         setDueDate(null);
+        setSelectedLabels([]);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -85,6 +94,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
                                 <IconButton
                                     key={opt.value}
                                     icon={Flag}
+                                    type="button"
                                     onClick={() => setPriority(opt.value)}
                                     className={cn(
                                         "h-7 w-7 rounded-md transition-all duration-200",
@@ -97,6 +107,30 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
                                     aria-pressed={priority === opt.value}
                                 />
                             ))}
+                        </div>
+
+                        <div className="flex flex-wrap gap-1">
+                            {AVAILABLE_LABELS.map((label: any) => {
+                                const isActive = selectedLabels.includes(label.id);
+                                return (
+                                    <button
+                                        key={label.id}
+                                        type="button"
+                                        onClick={() => setSelectedLabels((prev: string[]) =>
+                                            isActive ? prev.filter((id: string) => id !== label.id) : [...prev, label.id]
+                                        )}
+                                        className={cn(
+                                            "flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border transition-all duration-200",
+                                            isActive
+                                                ? "bg-primary/10 text-primary border-primary/20"
+                                                : "bg-muted/30 text-muted-foreground/60 border-transparent hover:border-border/50"
+                                        )}
+                                    >
+                                        <Hash className="w-2.5 h-2.5 opacity-50" />
+                                        {label.name}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 

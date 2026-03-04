@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Inbox } from './index';
-import { useTaskStore } from '../../app/store';
+import { useTaskStore, useProjectStore } from '../../app/store';
 import { Task } from '../../types';
 
 // Mock the components used within Inbox to isolate the test
@@ -19,43 +19,46 @@ vi.mock('../../components/common/IconButton', () => ({
 
 describe('Inbox Feature', () => {
     beforeEach(() => {
-        // Reset the store before each test
-        useTaskStore.setState({
-            tasks: [],
+        // Reset and hydrate stores before each test
+        useProjectStore.setState({
+            projects: [{ id: 'p1', name: 'Inbox', isInbox: true }],
             isLoading: false,
-            error: null
-        });
+            fetchProjectsAndLabels: vi.fn(),
+        } as any);
+        useTaskStore.setState({
+            tasks: [
+                { id: '1', title: 'Task 1', isCompleted: false, projectId: 'p1' } as unknown as Task,
+                { id: '2', title: 'Task 2', isCompleted: true, projectId: 'p1' } as unknown as Task
+            ],
+            isLoading: false,
+            error: null,
+            fetchTasks: vi.fn(),
+        } as any);
     });
 
-    it('should render the header and title correctly', () => {
+    it('should render the header and title correctly', async () => {
         render(<Inbox />);
 
-        expect(screen.getByText('Inbox')).toBeInTheDocument();
+        expect(await screen.findByText('Inbox')).toBeInTheDocument();
         expect(screen.getByText('All your tasks in one place.')).toBeInTheDocument();
     });
 
-    it('should render view option buttons', () => {
+    it('should render view option buttons', async () => {
         render(<Inbox />);
 
-        expect(screen.getByTestId('mock-icon-button-View Options')).toBeInTheDocument();
+        expect(await screen.findByTestId('mock-icon-button-View Options')).toBeInTheDocument();
         expect(screen.getByTestId('mock-icon-button-Board View')).toBeInTheDocument();
     });
 
-    it('should display the empty message when there are no tasks', () => {
+    it('should display the empty message when there are no tasks', async () => {
+        useTaskStore.setState({ tasks: [] });
+
         render(<Inbox />);
-        expect(screen.getByText('No tasks in your inbox. Relax!')).toBeInTheDocument();
+        expect(await screen.findByText('No tasks in your inbox. Relax!')).toBeInTheDocument();
     });
 
-    it('should pass tasks to TaskList when there is data', () => {
-        // Hydrate store with mock data
-        useTaskStore.setState({
-            tasks: [
-                { id: '1', content: 'Task 1', isCompleted: false } as unknown as Task,
-                { id: '2', content: 'Task 2', isCompleted: true } as unknown as Task
-            ]
-        });
-
+    it('should pass tasks to TaskList when there is data', async () => {
         render(<Inbox />);
-        expect(screen.getByText('Rendered 2 tasks')).toBeInTheDocument();
+        expect(await screen.findByText('Rendered 2 tasks')).toBeInTheDocument();
     });
 });

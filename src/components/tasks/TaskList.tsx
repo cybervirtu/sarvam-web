@@ -31,7 +31,7 @@ export const TaskList: React.FC<TaskListProps> = ({
         );
     }
 
-    const handleSave = (taskData: { title: string; priority: Priority }) => {
+    const handleSave = (taskData: { title: string; priority: Priority; labels?: string[] }) => {
         addTask(taskData);
         setIsAdding(false);
     };

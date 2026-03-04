@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useTaskStore } from '../../app/store';
+import { useTaskStore, useProjectStore } from '../../app/store';
 import { TaskList } from '../../components/tasks/TaskList';
 import { ListFilter, LayoutGrid, Plus } from 'lucide-react';
 import { IconButton } from '../../components/common/IconButton';
@@ -7,23 +7,36 @@ import { TaskForm } from '../../components/tasks/TaskForm';
 import { Priority } from '../../types';
 
 export const Inbox = () => {
-    const { tasks, isLoading, fetchTasks, getInboxTasks, addTask } = useTaskStore();
+    const { projects, fetchProjectsAndLabels, isLoading: isProjectLoading } = useProjectStore();
+    const { tasks, isLoading: isTasksLoading, fetchTasks, getInboxTasks, addTask } = useTaskStore();
     const inboxTasks = getInboxTasks();
     const [isAdding, setIsAdding] = useState(false);
 
     useEffect(() => {
+        if (projects.length === 0) {
+            fetchProjectsAndLabels();
+        }
         if (tasks.length === 0) {
             fetchTasks();
         }
-    }, [tasks.length, fetchTasks]);
+    }, [projects.length, tasks.length, fetchProjectsAndLabels, fetchTasks]);
 
-    const handleSaveTask = (taskData: { title: string; description?: string; priority: Priority }) => {
+    const handleSaveTask = (taskData: { title: string; description?: string; priority: Priority; labels?: string[] }) => {
+        const { getInboxProjectId } = useProjectStore.getState();
         addTask({
             ...taskData,
-            projectId: 'inbox',
+            projectId: getInboxProjectId() || 'p1',
         });
         setIsAdding(false);
     };
+
+    if ((isProjectLoading && projects.length === 0) || (isTasksLoading && tasks.length === 0)) {
+        return (
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <div className="animate-pulse text-muted-foreground">Loading inbox...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-4xl mx-auto py-8 px-4 animate-in fade-in duration-500">
@@ -62,7 +75,7 @@ export const Inbox = () => {
 
             <TaskList
                 tasks={inboxTasks}
-                isLoading={isLoading}
+                isLoading={isTasksLoading}
                 emptyMessage="No tasks in your inbox. Relax!"
                 hideAddButton={true}
             />

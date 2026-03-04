@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useTaskStore } from './tasks';
+import { useProjectStore } from './projects';
 import { Task } from '../../types';
 
 describe('Task Store', () => {
@@ -16,7 +17,7 @@ describe('Task Store', () => {
         id,
         title,
         description: '',
-        projectId: 'inbox',
+        projectId: 'p1',
         sectionId: null,
         labels: [],
         priority: 4,
@@ -69,7 +70,7 @@ describe('Task Store', () => {
             const updatedTask = useTaskStore.getState().tasks.find(t => t.id === storedId)!;
             expect(updatedTask.title).toBe('Updated Title');
             // Ensure other fields remain untouched
-            expect(updatedTask.projectId).toBe('inbox');
+            expect(updatedTask.projectId).toBe('p1');
         });
 
         it('should not throw if updating a non-existent task', () => {
@@ -141,36 +142,41 @@ describe('Task Store', () => {
     });
 
     describe('Selectors', () => {
-        it('getInboxTasks should return tasks with projectId "inbox" or null/undefined', () => {
+        it('getInboxTasks should return tasks with projectId matching the inbox ID', () => {
+            // Explicitly set up an inbox project for the selector to find
+            useProjectStore.getState().setProjects([
+                { id: 'p1', name: 'Inbox', isInbox: true, color: '#246fe0', order: 0, isFavorite: false, isArchived: false, isShared: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as any
+            ]);
+
             const task1 = createMockTask('t1', 'Inbox 1');
-            task1.projectId = 'inbox';
+            task1.projectId = 'p1';
 
             const task2 = createMockTask('t2', 'No Project');
             task2.projectId = null;
 
             const task3 = createMockTask('t3', 'Project 1');
-            task3.projectId = 'p1';
+            task3.projectId = 'p2';
 
             useTaskStore.getState().setTasks([task1, task2, task3]);
 
             const inboxTasks = useTaskStore.getState().getInboxTasks();
-            expect(inboxTasks).toHaveLength(2);
-            expect(inboxTasks.map(t => t.id)).toEqual(expect.arrayContaining(['t1', 't2']));
+            expect(inboxTasks).toHaveLength(1);
+            expect(inboxTasks[0].id).toBe('t1');
         });
 
         it('getTasksByProject should return tasks for a specific project', () => {
             const task1 = createMockTask('t1', 'Inbox 1');
-            task1.projectId = 'inbox';
+            task1.projectId = 'p1';
 
             const task2 = createMockTask('t2', 'Project 1 Task A');
-            task2.projectId = 'p1';
+            task2.projectId = 'p2';
 
             const task3 = createMockTask('t3', 'Project 1 Task B');
-            task3.projectId = 'p1';
+            task3.projectId = 'p2';
 
             useTaskStore.getState().setTasks([task1, task2, task3]);
 
-            const p1Tasks = useTaskStore.getState().getTasksByProject('p1');
+            const p1Tasks = useTaskStore.getState().getTasksByProject('p2');
             expect(p1Tasks).toHaveLength(2);
             expect(p1Tasks.map(t => t.id)).toEqual(expect.arrayContaining(['t2', 't3']));
         });
