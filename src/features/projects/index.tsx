@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProjectStore, useTaskStore } from '../../app/store';
 import { SectionList } from '../../components/projects/SectionList';
@@ -6,12 +6,15 @@ import { TaskItem } from '../../components/tasks/TaskItem';
 import { ListFilter, LayoutGrid, MoreHorizontal, Plus } from 'lucide-react';
 import { IconButton } from '../../components/common/IconButton';
 import { Button } from '../../components/common/Button';
+import { TaskForm } from '../../components/tasks/TaskForm';
+import { Priority } from '../../types';
 
 export const Projects = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { projects, sections, fetchProjectsAndLabels, fetchSections, isLoading: isProjectLoading } = useProjectStore();
-    const { tasks, isLoading: isTasksLoading, fetchTasks } = useTaskStore();
+    const { tasks, isLoading: isTasksLoading, fetchTasks, addTask } = useTaskStore();
+    const [isAdding, setIsAdding] = useState(false);
 
     useEffect(() => {
         if (projects.length === 0) {
@@ -39,6 +42,20 @@ export const Projects = () => {
 
     // Tasks without a section
     const unsectionedTasks = projectTasks.filter((t: any) => !t.sectionId);
+
+    const handleSaveTask = (taskData: {
+        title: string;
+        description?: string;
+        priority: Priority;
+        due?: { date: string; isRecurring: boolean } | null;
+        labels?: string[];
+    }) => {
+        addTask({
+            ...taskData,
+            projectId: id,
+        });
+        setIsAdding(false);
+    };
 
     if (isProjectLoading && projects.length === 0) {
         return (
@@ -137,6 +154,23 @@ export const Projects = () => {
                 </div>
             </header>
 
+            <div className="mb-8">
+                {isAdding ? (
+                    <TaskForm
+                        onSave={handleSaveTask}
+                        onCancel={() => setIsAdding(false)}
+                    />
+                ) : (
+                    <button
+                        onClick={() => setIsAdding(true)}
+                        className="flex items-center gap-3 text-sm text-muted-foreground hover:text-primary transition-colors group w-full px-4 py-3 rounded-xl hover:bg-primary/5 border border-transparent hover:border-primary/10"
+                    >
+                        <Plus className="w-4 h-4 text-primary transition-transform group-hover:scale-125 duration-300" />
+                        <span className="font-medium">Add task</span>
+                    </button>
+                )}
+            </div>
+
             <div className="space-y-10">
                 {/* Unsectioned Tasks */}
                 {unsectionedTasks.length > 0 && (
@@ -157,7 +191,7 @@ export const Projects = () => {
                 ))}
 
                 {/* Empty Project State */}
-                {projectTasks.length === 0 && !isTasksLoading && (
+                {projectTasks.length === 0 && !isTasksLoading && !isAdding && (
                     <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 opacity-40">
                         <div className="p-4 rounded-full bg-muted/50">
                             <Plus className="w-8 h-8" />
@@ -166,15 +200,11 @@ export const Projects = () => {
                             <p className="font-bold">This project is empty</p>
                             <p className="text-sm">Get started by adding your first task.</p>
                         </div>
-                        <Button variant="outline" size="sm">Add Task</Button>
+                        <Button variant="outline" size="sm" onClick={() => setIsAdding(true)}>Add Task</Button>
                     </div>
                 )}
             </div>
 
-            <button className="mt-8 flex items-center gap-3 text-sm text-muted-foreground hover:text-primary transition-colors group w-full px-4 py-3 rounded-xl hover:bg-primary/5 border border-transparent hover:border-primary/10">
-                <Plus className="w-4 h-4 text-primary transition-transform group-hover:scale-125 duration-300" />
-                <span className="font-medium">Add task</span>
-            </button>
         </div>
     );
 };

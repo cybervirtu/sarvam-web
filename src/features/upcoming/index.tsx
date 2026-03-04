@@ -1,13 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTaskStore, useProjectStore } from '../../app/store';
 import { TaskItem } from '../../components/tasks/TaskItem';
 import { getNext7Days, formatDisplayDate } from '../../utils/date';
-import { CalendarDays, ListFilter, MoreHorizontal, ChevronRight } from 'lucide-react';
+import { CalendarDays, ListFilter, MoreHorizontal, ChevronRight, Plus } from 'lucide-react';
 import { IconButton } from '../../components/common/IconButton';
+import { TaskForm } from '../../components/tasks/TaskForm';
+import { Priority } from '../../types';
 
 export const Upcoming = () => {
-    const { tasks, fetchTasks, isLoading } = useTaskStore();
+    const { tasks, fetchTasks, isLoading, addTask } = useTaskStore();
     const { projects, fetchProjectsAndLabels } = useProjectStore();
+    const [addingDate, setAddingDate] = useState<string | null>(null);
 
     useEffect(() => {
         if (tasks.length === 0) {
@@ -20,6 +23,20 @@ export const Upcoming = () => {
 
     const next7Days = getNext7Days();
     const activeTasks = tasks.filter(t => !t.completed);
+
+    const handleSaveTask = (taskData: {
+        title: string;
+        description?: string;
+        priority: Priority;
+        due?: { date: string; isRecurring: boolean } | null;
+        labels?: string[];
+    }) => {
+        addTask({
+            ...taskData,
+            due: taskData.due || (addingDate ? { date: addingDate, isRecurring: false } : null),
+        });
+        setAddingDate(null);
+    };
 
     // Group tasks by date
     const tasksByDate = next7Days.reduce((acc, date) => {
@@ -58,31 +75,56 @@ export const Upcoming = () => {
                 {next7Days.map((date) => {
                     const dayTasks = tasksByDate[date] || [];
                     const displayDate = formatDisplayDate(date);
+                    const isAddingThisDate = addingDate === date;
 
                     return (
                         <section key={date} className="group/section">
-                            <header className="flex items-center gap-3 py-2 px-1 border-b border-border/50 mb-3 sticky top-0 bg-background/80 backdrop-blur-sm z-10">
-                                <h3 className="text-sm font-bold tracking-tight text-foreground/80 lowercase first-letter:uppercase">
-                                    {displayDate}
-                                </h3>
-                                <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
-                                <span className="text-[10px] font-medium text-muted-foreground/40">
-                                    {dayTasks.length} {dayTasks.length === 1 ? 'task' : 'tasks'}
-                                </span>
+                            <header className="flex items-center justify-between py-2 px-1 border-b border-border/50 mb-3 sticky top-0 bg-background/80 backdrop-blur-sm z-10">
+                                <div className="flex items-center gap-3">
+                                    <h3 className="text-sm font-bold tracking-tight text-foreground/80 lowercase first-letter:uppercase">
+                                        {displayDate}
+                                    </h3>
+                                    <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
+                                    <span className="text-[10px] font-medium text-muted-foreground/40">
+                                        {dayTasks.length} {dayTasks.length === 1 ? 'task' : 'tasks'}
+                                    </span>
+                                </div>
+
+                                {!isAddingThisDate && (
+                                    <button
+                                        onClick={() => setAddingDate(date)}
+                                        className="opacity-0 group-hover/section:opacity-100 p-1 hover:bg-muted rounded-md transition-all text-muted-foreground hover:text-primary"
+                                        title="Add task"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                    </button>
+                                )}
                             </header>
 
                             <div className="space-y-1">
-                                {dayTasks.map(task => (
-                                    <TaskItem key={task.id} task={task} />
-                                ))}
+                                {isAddingThisDate && (
+                                    <div className="mt-2 mb-4">
+                                        <TaskForm
+                                            onSave={handleSaveTask}
+                                            onCancel={() => setAddingDate(null)}
+                                        />
+                                    </div>
+                                )}
 
-                                {dayTasks.length === 0 && (
-                                    <div className="py-6 px-4 rounded-2xl border border-dashed border-border/40 text-center group/empty transition-all hover:border-primary/20 hover:bg-primary/5 cursor-pointer">
+                                {dayTasks.length === 0 && !isAddingThisDate && (
+                                    <div
+                                        onClick={() => setAddingDate(date)}
+                                        className="py-6 px-4 rounded-2xl border border-dashed border-border/40 text-center group/empty transition-all hover:border-primary/20 hover:bg-primary/5 cursor-pointer mb-2"
+                                    >
                                         <p className="text-xs text-muted-foreground/40 group-hover/empty:text-primary/60 transition-colors">
                                             No tasks scheduled. Click to add one.
                                         </p>
                                     </div>
                                 )}
+
+                                {dayTasks.map(task => (
+                                    <TaskItem key={task.id} task={task} />
+                                ))}
                             </div>
                         </section>
                     );

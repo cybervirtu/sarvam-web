@@ -3,6 +3,9 @@ import { Section, Task } from '../../types';
 import { TaskItem } from '../tasks/TaskItem';
 import { ChevronDown, ChevronRight, MoreHorizontal, Plus } from 'lucide-react';
 import { IconButton } from '../common/IconButton';
+import { TaskForm } from '../tasks/TaskForm';
+import { useTaskStore } from '../../app/store';
+import { Priority } from '../../types';
 
 interface SectionListProps {
     section: Section;
@@ -11,6 +14,23 @@ interface SectionListProps {
 
 export const SectionList: React.FC<SectionListProps> = ({ section, tasks }) => {
     const [isExpanded, setIsExpanded] = React.useState(true);
+    const [isAdding, setIsAdding] = React.useState(false);
+    const { addTask } = useTaskStore();
+
+    const handleSaveTask = (taskData: {
+        title: string;
+        description?: string;
+        priority: Priority;
+        due?: { date: string; isRecurring: boolean } | null;
+        labels?: string[];
+    }) => {
+        addTask({
+            ...taskData,
+            projectId: section.projectId,
+            sectionId: section.id,
+        });
+        setIsAdding(false);
+    };
 
     return (
         <div className="space-y-2">
@@ -32,12 +52,28 @@ export const SectionList: React.FC<SectionListProps> = ({ section, tasks }) => {
 
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <IconButton icon={MoreHorizontal} size="sm" title="Section Actions" />
-                    <IconButton icon={Plus} size="sm" title="Add task to section" />
+                    <IconButton
+                        icon={Plus}
+                        size="sm"
+                        title="Add task to section"
+                        onClick={() => {
+                            setIsExpanded(true);
+                            setIsAdding(true);
+                        }}
+                    />
                 </div>
             </header>
 
             {isExpanded && (
                 <div className="space-y-1 pl-1 border-l border-border/20 ml-2 animate-in slide-in-from-top-1 duration-200">
+                    {isAdding && (
+                        <div className="mb-4 pr-1">
+                            <TaskForm
+                                onSave={handleSaveTask}
+                                onCancel={() => setIsAdding(false)}
+                            />
+                        </div>
+                    )}
                     {tasks.map((task) => (
                         <TaskItem key={task.id} task={task} />
                     ))}
