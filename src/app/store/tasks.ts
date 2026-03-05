@@ -36,6 +36,8 @@ interface TaskState {
     // Selectors
     getInboxTasks: () => Task[];
     getTasksByProject: (projectId: string) => Task[];
+    getTasksBySection: (projectId: string, sectionId: string) => Task[];
+    getUnsectionedTasks: (projectId: string) => Task[];
     getSubtasks: (parentId: string) => Task[];
 }
 
@@ -156,6 +158,16 @@ export const useTaskStore = create<TaskState>()(
             getTasksByProject: (projectId: string) => {
                 const { tasks } = get();
                 return tasks.filter(task => task.projectId === projectId);
+            },
+
+            getTasksBySection: (projectId: string, sectionId: string) => {
+                const { tasks } = get();
+                return tasks.filter(task => task.projectId === projectId && task.sectionId === sectionId);
+            },
+
+            getUnsectionedTasks: (projectId: string) => {
+                const { tasks } = get();
+                return tasks.filter(task => task.projectId === projectId && !task.sectionId);
             },
 
             getSubtasks: (parentId: string) => {

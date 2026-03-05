@@ -59,6 +59,7 @@ export const Projects = () => {
         addTask({
             ...taskData,
             projectId: id,
+            sectionId: null,
         });
         setIsAdding(false);
     };

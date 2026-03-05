@@ -1,30 +1,37 @@
 import { useEffect, useState } from 'react';
 import { X, Flag, Hash, Trash2, CheckCircle2, Circle } from 'lucide-react';
-import { useTaskStore, useUIStore } from '../../app/store';
+import { useTaskStore, useUIStore, useProjectStore } from '../../app/store';
 import { IconButton } from '../common/IconButton';
 import { Button } from '../common/Button';
 import { cn } from '../../lib/utils';
-import { Priority } from '../../types';
+import { Priority, Project, Section } from '../../types';
 import { PRIORITY_OPTIONS, AVAILABLE_LABELS } from './constants';
 import { DatePicker } from '../common/DatePicker';
 
 export const TaskDrawer = () => {
     const { activeTaskId, closeTaskDrawer } = useUIStore();
     const { tasks, updateTask, deleteTask, toggleTaskCompletion } = useTaskStore();
+    const { projects, getSectionsByProject } = useProjectStore();
 
     const task = tasks.find(t => t.id === activeTaskId);
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+    const [availableSections, setAvailableSections] = useState<Section[]>([]);
 
     useEffect(() => {
         if (task) {
             setTitle(task.title);
             setDescription(task.description || '');
             setIsConfirmingDelete(false);
+            if (task.projectId) {
+                setAvailableSections(getSectionsByProject(task.projectId));
+            } else {
+                setAvailableSections([]);
+            }
         }
-    }, [task]);
+    }, [task, getSectionsByProject]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -157,6 +164,41 @@ export const TaskDrawer = () => {
 
                     {/* Metadata Grid */}
                     <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Project</span>
+                            <select
+                                value={task.projectId || ''}
+                                onChange={(e) => {
+                                    const newProjectId = e.target.value;
+                                    updateTask(task.id, { projectId: newProjectId, sectionId: null });
+                                }}
+                                className="w-full h-10 rounded-xl border border-border/40 hover:bg-muted px-3 transition-colors text-xs bg-transparent focus:outline-none focus:ring-1 focus:ring-primary/20 cursor-pointer appearance-none"
+                            >
+                                <option value="" disabled>Select Project</option>
+                                {projects.map((p: Project) => (
+                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Section</span>
+                            <select
+                                value={task.sectionId || ''}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    updateTask(task.id, { sectionId: val === '' ? null : val });
+                                }}
+                                disabled={!task.projectId || availableSections.length === 0}
+                                className="w-full h-10 rounded-xl border border-border/40 hover:bg-muted px-3 transition-colors text-xs bg-transparent focus:outline-none focus:ring-1 focus:ring-primary/20 cursor-pointer appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <option value="">No Section</option>
+                                {availableSections.map((s: Section) => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
                         <div className="space-y-2">
                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Priority</span>
                             <div className="flex items-center bg-muted/40 p-1 rounded-xl border border-border/20 w-fit">
