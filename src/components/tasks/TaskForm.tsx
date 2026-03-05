@@ -76,7 +76,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
 
                 <textarea
                     data-testid="task-desc-input"
-                    value={description}
+                    value={description || ''}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Description"
                     className="w-full bg-transparent border-none outline-none text-sm text-muted-foreground placeholder:text-muted-foreground/30 resize-none min-h-[60px]"

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProjectStore, useTaskStore } from '../../app/store';
 import { SectionList } from '../../components/projects/SectionList';
-import { TaskItem } from '../../components/tasks/TaskItem';
+import { TaskListSortable } from '../../components/tasks/TaskListSortable';
 import { ListFilter, LayoutGrid, MoreHorizontal, Plus, Pencil, Trash2 } from 'lucide-react';
 import { IconButton } from '../../components/common/IconButton';
 import { Button } from '../../components/common/Button';
@@ -14,7 +14,7 @@ export const Projects = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { projects, sections, fetchProjectsAndLabels, fetchSections, isLoading: isProjectLoading, addProject, updateProject, deleteProject, getInboxProjectId, addSection } = useProjectStore();
-    const { tasks, isLoading: isTasksLoading, fetchTasks, addTask, moveTasksToInbox } = useTaskStore();
+    const { tasks, isLoading: isTasksLoading, fetchTasks, addTask, moveTasksToInbox, getTasksBySection, getUnsectionedTasks } = useTaskStore();
     const [isAdding, setIsAdding] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | undefined>();
@@ -39,15 +39,25 @@ export const Projects = () => {
     const activeProject = projects.find((p: Project) => p.id === id);
     const projectTasks = tasks.filter((t: Task) => t.projectId === id);
 
-    // Group tasks by section
-    const projectSections = sections.filter((s: Section) => s.projectId === id).sort((a: Section, b: Section) => a.order - b.order);
-    const tasksBySection = projectSections.reduce((acc: Record<string, Task[]>, section: Section) => {
-        acc[section.id] = projectTasks.filter((t: Task) => t.sectionId === section.id);
-        return acc;
-    }, {} as Record<string, Task[]>);
+    // Group tasks by section using sorted selectors (memoized for DnD stability)
+    const projectSections = useMemo(() =>
+        sections.filter((s: Section) => s.projectId === id).sort((a: Section, b: Section) => a.order - b.order),
+        [sections, id]
+    );
 
-    // Tasks without a section
-    const unsectionedTasks = projectTasks.filter((t: Task) => !t.sectionId);
+    const tasksBySection = useMemo(() =>
+        projectSections.reduce((acc: Record<string, Task[]>, section: Section) => {
+            acc[section.id] = getTasksBySection(id!, section.id);
+            return acc;
+        }, {} as Record<string, Task[]>),
+        [projectSections, id, getTasksBySection, tasks]
+    );
+
+    // Tasks without a section (sorted & memoized)
+    const unsectionedTasks = useMemo(() =>
+        id ? getUnsectionedTasks(id) : [],
+        [id, getUnsectionedTasks, tasks]
+    );
 
     const handleSaveTask = (taskData: {
         title: string;
@@ -245,9 +255,7 @@ export const Projects = () => {
                 {/* Unsectioned Tasks */}
                 {unsectionedTasks.length > 0 && (
                     <div className="space-y-1">
-                        {unsectionedTasks.map(task => (
-                            <TaskItem key={task.id} task={task} />
-                        ))}
+                        <TaskListSortable projectId={activeProject.id} sectionId={null} tasks={unsectionedTasks} isNested={false} />
                     </div>
                 )}
 

@@ -51,28 +51,31 @@ export const Sidebar = () => {
                             )
                         }
                     >
-                        {item.color ? (
-                            <div
-                                className="w-2.5 h-2.5 rounded-full shrink-0"
-                                style={{ backgroundColor: item.color }}
-                            />
-                        ) : (
-                            <item.icon className={cn("w-4 h-4 shrink-0 transition-colors", "group-hover:text-foreground")} />
+                        {({ isActive }) => (
+                            <>
+                                {item.color ? (
+                                    <div
+                                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                                        style={{ backgroundColor: item.color }}
+                                    />
+                                ) : (
+                                    <item.icon className={cn("w-4 h-4 shrink-0 transition-colors", "group-hover:text-foreground")} />
+                                )}
+                                <span className="flex-1 truncate">{item.label}</span>
+                                {item.count !== undefined && (
+                                    <span className="text-[10px] font-semibold bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground group-hover:bg-muted-foreground/10">
+                                        {item.count}
+                                    </span>
+                                )}
+                                {/* Indicative active bar */}
+                                <div
+                                    className={cn(
+                                        "absolute left-0 w-1 h-5 bg-primary rounded-r-full transition-all duration-300",
+                                        isActive ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
+                                    )}
+                                />
+                            </>
                         )}
-                        <span className="flex-1 truncate">{item.label}</span>
-                        {item.count !== undefined && (
-                            <span className="text-[10px] font-semibold bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground group-hover:bg-muted-foreground/10">
-                                {item.count}
-                            </span>
-                        )}
-                        {/* Indicative active bar */}
-                        <NavLink
-                            to={item.path}
-                            className={({ isActive }) => cn(
-                                "absolute left-0 w-1 h-5 bg-primary rounded-r-full transition-all duration-300",
-                                isActive ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
-                            )}
-                        />
                     </NavLink>
                 </li>
             ))}

@@ -144,7 +144,7 @@ export const TaskDrawer = () => {
                     <div className="space-y-1">
                         <textarea
                             data-testid="task-drawer-title"
-                            value={title}
+                            value={title || ''}
                             onChange={(e) => setTitle(e.target.value)}
                             onBlur={handleTitleBlur}
                             placeholder="Task title"
@@ -159,7 +159,7 @@ export const TaskDrawer = () => {
                         </div>
                         <textarea
                             data-testid="task-drawer-desc"
-                            value={description}
+                            value={description || ''}
                             onChange={(e) => setDescription(e.target.value)}
                             onBlur={handleDescriptionBlur}
                             placeholder="Add a detailed description..."

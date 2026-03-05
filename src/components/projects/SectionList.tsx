@@ -1,6 +1,6 @@
 import React from 'react';
 import { Section, Task } from '../../types';
-import { TaskItem } from '../tasks/TaskItem';
+import { TaskListSortable } from '../tasks/TaskListSortable';
 import { ChevronDown, ChevronRight, MoreHorizontal, Plus } from 'lucide-react';
 import { IconButton } from '../common/IconButton';
 import { TaskForm } from '../tasks/TaskForm';
@@ -42,6 +42,8 @@ export const SectionList: React.FC<SectionListProps> = ({ section, tasks }) => {
         }
         setIsEditingName(false);
     };
+
+    const memoizedTasks = React.useMemo(() => tasks, [tasks]);
 
     return (
         <div className="space-y-2">
@@ -123,9 +125,8 @@ export const SectionList: React.FC<SectionListProps> = ({ section, tasks }) => {
                             />
                         </div>
                     )}
-                    {tasks.map((task) => (
-                        <TaskItem key={task.id} task={task} />
-                    ))}
+
+                    <TaskListSortable projectId={section.projectId} sectionId={section.id} tasks={memoizedTasks} isNested={true} />
 
                     {tasks.length === 0 && (
                         <div className="py-8 text-center text-muted-foreground/30 text-xs italic">

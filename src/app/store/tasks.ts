@@ -30,6 +30,7 @@ interface TaskState {
     updateTask: (id: string, updates: UpdateTaskPayload) => void;
     toggleTaskCompletion: (id: string) => void;
     deleteTask: (id: string) => void;
+    reorderTasksWithinSection: (projectId: string | null, sectionId: string | null, newOrderedTaskIds: string[]) => void;
     moveTasksToInbox: (projectId: string, inboxId: string) => void;
     clearTasksSection: (sectionId: string) => void;
 
@@ -76,24 +77,34 @@ export const useTaskStore = create<TaskState>()(
 
             setTasks: (tasks) => set({ tasks }),
 
-            addTask: (taskData: NewTaskPayload) => set((state) => {
+            addTask: (taskData) => set((state) => {
+                const id = `t${Date.now()}`;
+                const now = new Date().toISOString();
+
+                // Calculate next order value within the same section/project
+                const sameContextTasks = state.tasks.filter(t =>
+                    t.projectId === (taskData.projectId || 'p1') &&
+                    t.sectionId === (taskData.sectionId || null)
+                );
+                const maxOrder = sameContextTasks.reduce((max, t) => Math.max(max, t.order || 0), 0);
+
                 const newTask: Task = {
-                    id: Math.random().toString(36).substring(2, 9),
+                    id,
                     title: taskData.title,
-                    description: taskData.description || null,
-                    completed: false,
+                    description: taskData.description,
                     priority: taskData.priority || 4,
-                    labels: taskData.labels || [],
+                    completed: false,
                     projectId: taskData.projectId || 'p1',
                     sectionId: taskData.sectionId || null,
-                    parentId: taskData.parentId || null,
-                    order: taskData.order ?? state.tasks.length + 1,
+                    parentId: null,
+                    labels: taskData.labels || [],
                     due: taskData.due || null,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
+                    order: maxOrder + 1,
+                    createdAt: now,
+                    updatedAt: now,
                     completedAt: null
                 };
-                return { tasks: [newTask, ...state.tasks] };
+                return { tasks: [...state.tasks, newTask] };
             }),
 
             updateTask: (id, updates) => set((state) => ({
@@ -133,6 +144,26 @@ export const useTaskStore = create<TaskState>()(
                 };
             }),
 
+            reorderTasksWithinSection: (projectId, sectionId, newOrderedTaskIds) => set((state) => {
+                const orderMap = new Map<string, number>();
+                newOrderedTaskIds.forEach((id, index) => {
+                    orderMap.set(id, index + 1);
+                });
+
+                const updatedTasks = state.tasks.map(task => {
+                    if (task.projectId === projectId && task.sectionId === sectionId && orderMap.has(task.id)) {
+                        return {
+                            ...task,
+                            order: orderMap.get(task.id)!,
+                            updatedAt: new Date().toISOString()
+                        };
+                    }
+                    return task;
+                });
+
+                return { tasks: updatedTasks };
+            }),
+
             moveTasksToInbox: (projectId: string, inboxId: string) => set((state) => {
                 return {
                     tasks: state.tasks.map((task) =>
@@ -152,27 +183,37 @@ export const useTaskStore = create<TaskState>()(
             // Selectors
             getInboxTasks: () => {
                 const { tasks } = get();
-                return tasks.filter(task => task.projectId === 'p1'); // Simplified, UI should filter if needed
+                return tasks
+                    .filter(task => task.projectId === 'p1')
+                    .sort((a, b) => (a.order || 0) - (b.order || 0));
             },
 
             getTasksByProject: (projectId: string) => {
                 const { tasks } = get();
-                return tasks.filter(task => task.projectId === projectId);
+                return tasks
+                    .filter(task => task.projectId === projectId)
+                    .sort((a, b) => (a.order || 0) - (b.order || 0));
             },
 
             getTasksBySection: (projectId: string, sectionId: string) => {
                 const { tasks } = get();
-                return tasks.filter(task => task.projectId === projectId && task.sectionId === sectionId);
+                return tasks
+                    .filter(task => task.projectId === projectId && task.sectionId === sectionId)
+                    .sort((a, b) => (a.order || 0) - (b.order || 0));
             },
 
             getUnsectionedTasks: (projectId: string) => {
                 const { tasks } = get();
-                return tasks.filter(task => task.projectId === projectId && !task.sectionId);
+                return tasks
+                    .filter(task => task.projectId === projectId && !task.sectionId)
+                    .sort((a, b) => (a.order || 0) - (b.order || 0));
             },
 
             getSubtasks: (parentId: string) => {
                 const { tasks } = get();
-                return tasks.filter(task => task.parentId === parentId);
+                return tasks
+                    .filter(task => task.parentId === parentId)
+                    .sort((a, b) => (a.order || 0) - (b.order || 0));
             }
         }),
         {

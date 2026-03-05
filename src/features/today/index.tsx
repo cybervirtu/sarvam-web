@@ -44,7 +44,7 @@ export const Today = () => {
     });
 
     // Filter tasks
-    const activeTasks = tasks.filter(t => !t.completed);
+    const activeTasks = tasks.filter(t => !t.completed).sort((a, b) => (a.order || 0) - (b.order || 0));
     const overdueTasks = activeTasks.filter(t => t.due?.date && isOverdue(t.due.date));
     const todayTasks = activeTasks.filter(t => t.due?.date && isToday(t.due.date));
 

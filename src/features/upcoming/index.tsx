@@ -22,7 +22,7 @@ export const Upcoming = () => {
     }, [tasks.length, projects.length, fetchTasks, fetchProjectsAndLabels]);
 
     const next7Days = getNext7Days();
-    const activeTasks = tasks.filter(t => !t.completed);
+    const activeTasks = tasks.filter(t => !t.completed).sort((a, b) => (a.order || 0) - (b.order || 0));
 
     const handleSaveTask = (taskData: {
         title: string;
