@@ -13,11 +13,13 @@ import { Priority, Project } from '../../types';
 export const Projects = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { projects, sections, fetchProjectsAndLabels, fetchSections, isLoading: isProjectLoading, addProject, updateProject, deleteProject, getInboxProjectId } = useProjectStore();
+    const { projects, sections, fetchProjectsAndLabels, fetchSections, isLoading: isProjectLoading, addProject, updateProject, deleteProject, getInboxProjectId, addSection } = useProjectStore();
     const { tasks, isLoading: isTasksLoading, fetchTasks, addTask, moveTasksToInbox } = useTaskStore();
     const [isAdding, setIsAdding] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | undefined>();
+    const [isAddingSection, setIsAddingSection] = useState(false);
+    const [newSectionName, setNewSectionName] = useState('');
 
     useEffect(() => {
         if (projects.length === 0) {
@@ -38,7 +40,8 @@ export const Projects = () => {
     const projectTasks = tasks.filter((t: any) => t.projectId === id);
 
     // Group tasks by section
-    const tasksBySection = sections.reduce((acc: Record<string, typeof tasks>, section: any) => {
+    const projectSections = sections.filter((s: any) => s.projectId === id).sort((a: any, b: any) => a.order - b.order);
+    const tasksBySection = projectSections.reduce((acc: Record<string, typeof tasks>, section: any) => {
         acc[section.id] = projectTasks.filter((t: any) => t.sectionId === section.id);
         return acc;
     }, {} as Record<string, typeof tasks>);
@@ -58,6 +61,15 @@ export const Projects = () => {
             projectId: id,
         });
         setIsAdding(false);
+    };
+
+    const handleCreateSection = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newSectionName.trim() && activeProject) {
+            addSection(activeProject.id, newSectionName.trim());
+            setNewSectionName('');
+            setIsAddingSection(false);
+        }
     };
 
     if (isProjectLoading && projects.length === 0) {
@@ -239,7 +251,7 @@ export const Projects = () => {
                 )}
 
                 {/* Sections */}
-                {sections.map((section: any) => (
+                {projectSections.map((section: any) => (
                     <SectionList
                         key={section.id}
                         section={section}
@@ -247,8 +259,36 @@ export const Projects = () => {
                     />
                 ))}
 
+                {/* Add Section */}
+                {isAddingSection ? (
+                    <form onSubmit={handleCreateSection} className="p-4 rounded-xl border border-border/50 bg-background/50">
+                        <input
+                            type="text"
+                            placeholder="Name this section"
+                            value={newSectionName}
+                            onChange={(e) => setNewSectionName(e.target.value)}
+                            className="w-full bg-transparent border-none focus:ring-0 p-0 text-sm font-medium mb-3"
+                            autoFocus
+                        />
+                        <div className="flex gap-2">
+                            <Button type="submit" size="sm" disabled={!newSectionName.trim()}>Add section</Button>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => setIsAddingSection(false)}>Cancel</Button>
+                        </div>
+                    </form>
+                ) : (
+                    <div className="pt-2 border-t border-border/20">
+                        <button
+                            onClick={() => setIsAddingSection(true)}
+                            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2 px-1"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span>Add section</span>
+                        </button>
+                    </div>
+                )}
+
                 {/* Empty Project State */}
-                {projectTasks.length === 0 && !isTasksLoading && !isAdding && (
+                {projectTasks.length === 0 && projectSections.length === 0 && !isTasksLoading && !isAdding && !isAddingSection && (
                     <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 opacity-40">
                         <div className="p-4 rounded-full bg-muted/50">
                             <Plus className="w-8 h-8" />

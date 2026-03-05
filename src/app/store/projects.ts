@@ -20,10 +20,14 @@ interface ProjectState {
     addLabel: (label: Label) => void;
     updateLabel: (id: string, updates: Partial<Label>) => void;
     deleteLabel: (id: string) => void;
-    setProjects: (projects: Project[]) => void;
+    // Section Actions
+    addSection: (projectId: string, name: string) => void;
+    updateSection: (sectionId: string, updates: Partial<Section>) => void;
+    deleteSection: (sectionId: string) => void;
 
     // Selectors
     getInboxProjectId: () => string | undefined;
+    getSectionsByProject: (projectId: string) => Section[];
 }
 
 export const useProjectStore = create<ProjectState>((set) => ({
@@ -104,10 +108,39 @@ export const useProjectStore = create<ProjectState>((set) => ({
         labels: state.labels.filter((l) => l.id !== id)
     })),
 
-    setProjects: (projects) => set({ projects }),
+    setProjects: (projects: Project[]) => set({ projects }),
+
+    // Section Actions
+    addSection: (projectId, name) => set((state) => {
+        const projectSections = state.sections.filter(s => s.projectId === projectId);
+        const newSection: Section = {
+            id: Math.random().toString(36).substring(2, 9),
+            projectId,
+            name,
+            order: projectSections.length + 1,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+        return { sections: [...state.sections, newSection] };
+    }),
+
+    updateSection: (sectionId, updates) => set((state) => ({
+        sections: state.sections.map(s =>
+            s.id === sectionId ? { ...s, ...updates, updatedAt: new Date().toISOString() } : s
+        )
+    })),
+
+    deleteSection: (sectionId) => set((state) => ({
+        sections: state.sections.filter(s => s.id !== sectionId)
+    })),
 
     getInboxProjectId: (): string | undefined => {
         const state = useProjectStore.getState() as any;
         return state.projects.find((p: Project) => p.isInbox)?.id;
+    },
+
+    getSectionsByProject: (projectId: string): Section[] => {
+        const state = useProjectStore.getState() as any;
+        return state.sections.filter((s: Section) => s.projectId === projectId).sort((a: Section, b: Section) => a.order - b.order);
     },
 }));

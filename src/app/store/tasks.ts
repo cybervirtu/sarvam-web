@@ -31,6 +31,7 @@ interface TaskState {
     toggleTaskCompletion: (id: string) => void;
     deleteTask: (id: string) => void;
     moveTasksToInbox: (projectId: string, inboxId: string) => void;
+    clearTasksSection: (sectionId: string) => void;
 
     // Selectors
     getInboxTasks: () => Task[];
@@ -134,6 +135,14 @@ export const useTaskStore = create<TaskState>()(
                 return {
                     tasks: state.tasks.map((task) =>
                         task.projectId === projectId ? { ...task, projectId: inboxId, sectionId: null, updatedAt: new Date().toISOString() } : task
+                    ),
+                };
+            }),
+
+            clearTasksSection: (sectionId: string) => set((state) => {
+                return {
+                    tasks: state.tasks.map((task) =>
+                        task.sectionId === sectionId ? { ...task, sectionId: null, updatedAt: new Date().toISOString() } : task
                     ),
                 };
             }),
