@@ -12,7 +12,7 @@ interface ProjectState {
     // Actions
     fetchProjectsAndLabels: () => Promise<void>;
     fetchSections: (projectId: string) => Promise<void>;
-    addProject: (project: Project) => void;
+    addProject: (name: string, color?: string) => void;
     updateProject: (id: string, updates: Partial<Project>) => void;
     toggleProjectFavorite: (id: string) => void;
     deleteProject: (id: string) => void;
@@ -56,9 +56,27 @@ export const useProjectStore = create<ProjectState>((set) => ({
         }
     },
 
-    addProject: (project) => set((state) => ({
-        projects: [...state.projects, project]
-    })),
+    addProject: (name, color = '#808080') => set((state) => {
+        const newProject: Project = {
+            id: Math.random().toString(36).substring(2, 9),
+            name,
+            color,
+            order: state.projects.length + 1,
+            isFavorite: false,
+            isInbox: false,
+            isShared: false,
+            viewStyle: 'list',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+        return { projects: [...state.projects, newProject] };
+    }),
+
+    deleteProject: (id) => {
+        set((state) => ({
+            projects: state.projects.filter((p) => p.id !== id)
+        }));
+    },
 
     updateProject: (id, updates) => set((state) => ({
         projects: state.projects.map((p) =>
@@ -70,10 +88,6 @@ export const useProjectStore = create<ProjectState>((set) => ({
         projects: state.projects.map((p) =>
             p.id === id ? { ...p, isFavorite: !p.isFavorite, updatedAt: new Date().toISOString() } : p
         )
-    })),
-
-    deleteProject: (id) => set((state) => ({
-        projects: state.projects.filter((p) => p.id !== id)
     })),
 
     addLabel: (label) => set((state) => ({

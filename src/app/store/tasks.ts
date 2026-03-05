@@ -3,7 +3,6 @@ import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { Task, DueDate, Priority } from '../../types';
 import { getTasks } from '../../services/mocks';
 import { debounce } from '../../utils/debounce';
-import { useProjectStore } from './projects';
 
 export type NewTaskPayload = {
     title: string;
@@ -31,6 +30,7 @@ interface TaskState {
     updateTask: (id: string, updates: UpdateTaskPayload) => void;
     toggleTaskCompletion: (id: string) => void;
     deleteTask: (id: string) => void;
+    moveTasksToInbox: (projectId: string, inboxId: string) => void;
 
     // Selectors
     getInboxTasks: () => Task[];
@@ -81,7 +81,7 @@ export const useTaskStore = create<TaskState>()(
                     completed: false,
                     priority: taskData.priority || 4,
                     labels: taskData.labels || [],
-                    projectId: taskData.projectId || useProjectStore.getState().getInboxProjectId() || 'p1',
+                    projectId: taskData.projectId || 'p1',
                     sectionId: taskData.sectionId || null,
                     parentId: taskData.parentId || null,
                     order: taskData.order ?? state.tasks.length + 1,
@@ -130,11 +130,18 @@ export const useTaskStore = create<TaskState>()(
                 };
             }),
 
+            moveTasksToInbox: (projectId: string, inboxId: string) => set((state) => {
+                return {
+                    tasks: state.tasks.map((task) =>
+                        task.projectId === projectId ? { ...task, projectId: inboxId, sectionId: null, updatedAt: new Date().toISOString() } : task
+                    ),
+                };
+            }),
+
             // Selectors
             getInboxTasks: () => {
                 const { tasks } = get();
-                const inboxId = useProjectStore.getState().getInboxProjectId();
-                return tasks.filter(task => task.projectId === inboxId);
+                return tasks.filter(task => task.projectId === 'p1'); // Simplified, UI should filter if needed
             },
 
             getTasksByProject: (projectId: string) => {

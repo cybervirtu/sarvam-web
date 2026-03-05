@@ -1,16 +1,23 @@
-import { useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
     Inbox, Calendar, CalendarDays,
     CheckCircle2, FolderKanban, Tags, Filter, X,
-    Plus, Settings, Hash
+    Plus, Settings, Pencil, Trash2
 } from 'lucide-react';
-import { useUIStore, useProjectStore } from '../../app/store';
+import { useUIStore, useProjectStore, useTaskStore } from '../../app/store';
+import { ProjectModal } from '../projects/ProjectModal';
 import { cn } from '../../lib/utils';
+import { Project } from '../../types';
 
 export const Sidebar = () => {
     const { isSidebarOpen, toggleSidebar } = useUIStore();
-    const { projects, fetchProjectsAndLabels } = useProjectStore();
+    const { projects, fetchProjectsAndLabels, addProject, updateProject, deleteProject, getInboxProjectId } = useProjectStore();
+    const { moveTasksToInbox } = useTaskStore();
+    const navigate = useNavigate();
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingProject, setEditingProject] = useState<Project | undefined>();
 
     useEffect(() => {
         if (projects.length === 0) {
@@ -120,7 +127,13 @@ export const Sidebar = () => {
                             <span className="text-[11px] font-bold text-muted-foreground/50 uppercase tracking-[0.1em] select-none">
                                 Workspace
                             </span>
-                            <button className="p-1 text-muted-foreground/40 hover:text-foreground hover:bg-muted rounded transition-colors opacity-0 group-hover/sidebar:opacity-100">
+                            <button
+                                onClick={() => {
+                                    setEditingProject(undefined);
+                                    setIsModalOpen(true);
+                                }}
+                                className="p-1 text-muted-foreground/40 hover:text-foreground hover:bg-muted rounded transition-colors opacity-0 group-hover/sidebar:opacity-100"
+                            >
                                 <Plus className="w-3 h-3" />
                             </button>
                         </div>
@@ -138,16 +151,73 @@ export const Sidebar = () => {
                                 <div className="px-3 mb-2">
                                     <span className="text-[10px] font-semibold text-muted-foreground/30 uppercase tracking-wider">My Projects</span>
                                 </div>
-                                {renderNavItems(projects.filter(p => !p.isInbox).map(p => ({
-                                    icon: Hash,
-                                    label: p.name,
-                                    path: `/projects/${p.id}`,
-                                    color: p.color
-                                })))}
+                                {projects.filter(p => !p.isInbox).map(p => (
+                                    <li key={p.id} className="group/item relative">
+                                        <NavLink
+                                            to={`/projects/${p.id}`}
+                                            className={({ isActive }) =>
+                                                cn(
+                                                    'flex items-center gap-3 px-3 h-10 rounded-xl transition-all duration-200 text-sm font-medium group relative select-none',
+                                                    isActive
+                                                        ? 'bg-primary/10 text-primary'
+                                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                                )
+                                            }
+                                        >
+                                            <div
+                                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                                style={{ backgroundColor: p.color }}
+                                            />
+                                            <span className="flex-1 truncate">{p.name}</span>
+
+                                            <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setEditingProject(p);
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                    className="p-1 hover:bg-muted-foreground/10 rounded transition-colors"
+                                                >
+                                                    <Pencil className="w-3 h-3" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        if (confirm(`Are you sure you want to delete "${p.name}"? Tasks will be moved to Inbox.`)) {
+                                                            const inboxId = getInboxProjectId() || 'p1';
+                                                            moveTasksToInbox(p.id, inboxId);
+                                                            deleteProject(p.id);
+                                                            navigate('/inbox');
+                                                        }
+                                                    }}
+                                                    className="p-1 hover:bg-red-500/10 hover:text-red-500 rounded transition-colors"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        </NavLink>
+                                    </li>
+                                ))}
                             </div>
                         )}
                     </section>
                 </div>
+
+                <ProjectModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSave={(name, color) => {
+                        if (editingProject) {
+                            updateProject(editingProject.id, { name, color });
+                        } else {
+                            addProject(name, color);
+                        }
+                    }}
+                    initialProject={editingProject}
+                />
 
                 <div className="mt-auto pt-6 border-t border-border/50">
                     <button className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-all duration-200">

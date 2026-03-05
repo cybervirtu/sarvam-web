@@ -3,18 +3,21 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useProjectStore, useTaskStore } from '../../app/store';
 import { SectionList } from '../../components/projects/SectionList';
 import { TaskItem } from '../../components/tasks/TaskItem';
-import { ListFilter, LayoutGrid, MoreHorizontal, Plus } from 'lucide-react';
+import { ListFilter, LayoutGrid, MoreHorizontal, Plus, Pencil, Trash2 } from 'lucide-react';
 import { IconButton } from '../../components/common/IconButton';
 import { Button } from '../../components/common/Button';
 import { TaskForm } from '../../components/tasks/TaskForm';
-import { Priority } from '../../types';
+import { ProjectModal } from '../../components/projects/ProjectModal';
+import { Priority, Project } from '../../types';
 
 export const Projects = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { projects, sections, fetchProjectsAndLabels, fetchSections, isLoading: isProjectLoading } = useProjectStore();
-    const { tasks, isLoading: isTasksLoading, fetchTasks, addTask } = useTaskStore();
+    const { projects, sections, fetchProjectsAndLabels, fetchSections, isLoading: isProjectLoading, addProject, updateProject, deleteProject, getInboxProjectId } = useProjectStore();
+    const { tasks, isLoading: isTasksLoading, fetchTasks, addTask, moveTasksToInbox } = useTaskStore();
     const [isAdding, setIsAdding] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingProject, setEditingProject] = useState<Project | undefined>();
 
     useEffect(() => {
         if (projects.length === 0) {
@@ -102,13 +105,32 @@ export const Projects = () => {
                     ))}
 
                     {/* Add Project Card */}
-                    <button className="p-6 rounded-3xl border-2 border-dashed border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300 flex flex-col items-center justify-center text-center group">
+                    <button
+                        onClick={() => {
+                            setEditingProject(undefined);
+                            setIsModalOpen(true);
+                        }}
+                        className="p-6 rounded-3xl border-2 border-dashed border-border/60 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300 flex flex-col items-center justify-center text-center group"
+                    >
                         <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
                             <Plus className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
                         </div>
                         <span className="text-sm font-semibold text-muted-foreground group-hover:text-primary">Create New Project</span>
                     </button>
                 </div>
+
+                <ProjectModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSave={(name, color) => {
+                        if (editingProject) {
+                            updateProject(editingProject.id, { name, color });
+                        } else {
+                            addProject(name, color);
+                        }
+                    }}
+                    initialProject={editingProject}
+                />
             </div>
         );
     }
@@ -150,9 +172,44 @@ export const Projects = () => {
                 <div className="flex items-center gap-2">
                     <IconButton icon={ListFilter} title="View Options" />
                     <IconButton icon={LayoutGrid} title="Board View" />
-                    <IconButton icon={MoreHorizontal} title="Project Actions" />
+                    <div className="flex items-center gap-1">
+                        <IconButton
+                            icon={Pencil}
+                            title="Rename Project"
+                            onClick={() => {
+                                setEditingProject(activeProject);
+                                setIsModalOpen(true);
+                            }}
+                        />
+                        {!activeProject.isInbox && (
+                            <IconButton
+                                icon={Trash2}
+                                title="Delete Project"
+                                onClick={() => {
+                                    if (confirm(`Are you sure you want to delete "${activeProject.name}"? Tasks will be moved to Inbox.`)) {
+                                        const inboxId = getInboxProjectId() || 'p1';
+                                        moveTasksToInbox(activeProject.id, inboxId);
+                                        deleteProject(activeProject.id);
+                                        navigate('/inbox');
+                                    }
+                                }}
+                                className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+                            />
+                        )}
+                    </div>
                 </div>
             </header>
+
+            <ProjectModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSave={(name, color) => {
+                    if (editingProject) {
+                        updateProject(editingProject.id, { name, color });
+                    }
+                }}
+                initialProject={editingProject}
+            />
 
             <div className="mb-8">
                 {isAdding ? (
