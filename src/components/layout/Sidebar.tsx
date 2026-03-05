@@ -128,6 +128,7 @@ export const Sidebar = () => {
                                 Workspace
                             </span>
                             <button
+                                data-testid="add-project-btn"
                                 onClick={() => {
                                     setEditingProject(undefined);
                                     setIsModalOpen(true);

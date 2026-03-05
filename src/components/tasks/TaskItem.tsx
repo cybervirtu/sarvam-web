@@ -24,6 +24,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task }) => {
 
     return (
         <div
+            data-testid={`task-item-${task.id}`}
             onClick={() => openTaskDrawer(task.id)}
             className="group flex items-start gap-3 p-3 rounded-xl hover:bg-muted/50 transition-all duration-200 border border-transparent hover:border-border/50 cursor-pointer"
         >

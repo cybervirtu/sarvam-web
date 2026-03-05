@@ -43,15 +43,17 @@ export const TaskDrawer = () => {
 
     if (!activeTaskId || !task) return null;
 
-    const handleTitleBlur = () => {
-        if (title.trim() !== task.title) {
-            updateTask(task.id, { title: title.trim() });
+    const handleTitleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+        const newTitle = e.target.value.trim();
+        if (newTitle !== task.title) {
+            updateTask(task.id, { title: newTitle });
         }
     };
 
-    const handleDescriptionBlur = () => {
-        if (description !== task.description) {
-            updateTask(task.id, { description });
+    const handleDescriptionBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+        const newDesc = e.target.value;
+        if (newDesc !== task.description) {
+            updateTask(task.id, { description: newDesc });
         }
     };
 
@@ -83,6 +85,7 @@ export const TaskDrawer = () => {
 
             {/* Drawer */}
             <div
+                data-testid="task-drawer"
                 className="fixed right-0 top-0 h-full w-[450px] bg-background border-l border-border shadow-premium z-50 animate-in slide-in-from-right duration-500 ease-out flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -140,6 +143,7 @@ export const TaskDrawer = () => {
                     {/* Title */}
                     <div className="space-y-1">
                         <textarea
+                            data-testid="task-drawer-title"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             onBlur={handleTitleBlur}
@@ -154,6 +158,7 @@ export const TaskDrawer = () => {
                             <span>Description</span>
                         </div>
                         <textarea
+                            data-testid="task-drawer-desc"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             onBlur={handleDescriptionBlur}
@@ -167,6 +172,7 @@ export const TaskDrawer = () => {
                         <div className="space-y-2">
                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Project</span>
                             <select
+                                data-testid="task-project-select"
                                 value={task.projectId || ''}
                                 onChange={(e) => {
                                     const newProjectId = e.target.value;
@@ -184,6 +190,7 @@ export const TaskDrawer = () => {
                         <div className="space-y-2">
                             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Section</span>
                             <select
+                                data-testid="task-section-select"
                                 value={task.sectionId || ''}
                                 onChange={(e) => {
                                     const val = e.target.value;
@@ -204,6 +211,7 @@ export const TaskDrawer = () => {
                             <div className="flex items-center bg-muted/40 p-1 rounded-xl border border-border/20 w-fit">
                                 {PRIORITY_OPTIONS.map((opt) => (
                                     <IconButton
+                                        data-testid={`priority-btn-${opt.value}`}
                                         key={opt.value}
                                         icon={Flag}
                                         onClick={() => handlePriorityChange(opt.value)}
@@ -244,6 +252,7 @@ export const TaskDrawer = () => {
                                 const isActive = task.labels.includes(label.id);
                                 return (
                                     <button
+                                        data-testid={`label-btn-${label.name}`}
                                         key={label.id}
                                         onClick={() => toggleLabel(label.id)}
                                         aria-pressed={isActive}

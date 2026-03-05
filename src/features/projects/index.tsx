@@ -8,7 +8,7 @@ import { IconButton } from '../../components/common/IconButton';
 import { Button } from '../../components/common/Button';
 import { TaskForm } from '../../components/tasks/TaskForm';
 import { ProjectModal } from '../../components/projects/ProjectModal';
-import { Priority, Project } from '../../types';
+import { Priority, Project, Task, Section } from '../../types';
 
 export const Projects = () => {
     const { id } = useParams<{ id: string }>();
@@ -36,18 +36,18 @@ export const Projects = () => {
         }
     }, [id, fetchSections]);
 
-    const activeProject = projects.find((p: any) => p.id === id);
-    const projectTasks = tasks.filter((t: any) => t.projectId === id);
+    const activeProject = projects.find((p: Project) => p.id === id);
+    const projectTasks = tasks.filter((t: Task) => t.projectId === id);
 
     // Group tasks by section
-    const projectSections = sections.filter((s: any) => s.projectId === id).sort((a: any, b: any) => a.order - b.order);
-    const tasksBySection = projectSections.reduce((acc: Record<string, typeof tasks>, section: any) => {
-        acc[section.id] = projectTasks.filter((t: any) => t.sectionId === section.id);
+    const projectSections = sections.filter((s: Section) => s.projectId === id).sort((a: Section, b: Section) => a.order - b.order);
+    const tasksBySection = projectSections.reduce((acc: Record<string, Task[]>, section: Section) => {
+        acc[section.id] = projectTasks.filter((t: Task) => t.sectionId === section.id);
         return acc;
-    }, {} as Record<string, typeof tasks>);
+    }, {} as Record<string, Task[]>);
 
     // Tasks without a section
-    const unsectionedTasks = projectTasks.filter((t: any) => !t.sectionId);
+    const unsectionedTasks = projectTasks.filter((t: Task) => !t.sectionId);
 
     const handleSaveTask = (taskData: {
         title: string;
@@ -95,7 +95,7 @@ export const Projects = () => {
                 </header>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {projects.filter((p: any) => !p.isInbox).map((project: any) => (
+                    {projects.filter((p: Project) => !p.isInbox).map((project: Project) => (
                         <div
                             key={project.id}
                             className="group p-6 rounded-3xl bg-muted/20 border border-border/50 hover:bg-muted/40 hover:border-primary/20 transition-all duration-300 cursor-pointer"
@@ -112,7 +112,7 @@ export const Projects = () => {
                             </div>
                             <h3 className="text-lg font-bold mb-1">{project.name}</h3>
                             <p className="text-xs text-muted-foreground">
-                                {tasks.filter((t: any) => t.projectId === project.id).length} tasks
+                                {tasks.filter((t: Task) => t.projectId === project.id).length} tasks
                             </p>
                         </div>
                     ))}
@@ -252,7 +252,7 @@ export const Projects = () => {
                 )}
 
                 {/* Sections */}
-                {projectSections.map((section: any) => (
+                {projectSections.map((section: Section) => (
                     <SectionList
                         key={section.id}
                         section={section}
@@ -264,6 +264,7 @@ export const Projects = () => {
                 {isAddingSection ? (
                     <form onSubmit={handleCreateSection} className="p-4 rounded-xl border border-border/50 bg-background/50">
                         <input
+                            data-testid="section-name-input"
                             type="text"
                             placeholder="Name this section"
                             value={newSectionName}

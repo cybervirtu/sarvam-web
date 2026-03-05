@@ -46,7 +46,7 @@ export const TaskList: React.FC<TaskListProps> = ({
     }
 
     return (
-        <div className="space-y-1">
+        <div className="space-y-1" data-testid="task-list">
             {tasks.map((task) => (
                 <TaskItem key={task.id} task={task} />
             ))}
@@ -61,6 +61,7 @@ export const TaskList: React.FC<TaskListProps> = ({
                     </div>
                 ) : (
                     <button
+                        data-testid="quick-add-btn"
                         onClick={() => setIsAdding(true)}
                         className="w-full flex items-center gap-3 p-3 rounded-xl text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all duration-200 mt-2 group"
                     >

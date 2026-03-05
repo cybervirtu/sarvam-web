@@ -16,6 +16,7 @@ interface ProjectState {
     updateProject: (id: string, updates: Partial<Project>) => void;
     toggleProjectFavorite: (id: string) => void;
     deleteProject: (id: string) => void;
+    setProjects: (projects: Project[]) => void;
 
     addLabel: (label: Label) => void;
     updateLabel: (id: string, updates: Partial<Label>) => void;
@@ -135,12 +136,12 @@ export const useProjectStore = create<ProjectState>((set) => ({
     })),
 
     getInboxProjectId: (): string | undefined => {
-        const state = useProjectStore.getState() as any;
+        const state = useProjectStore.getState();
         return state.projects.find((p: Project) => p.isInbox)?.id;
     },
 
     getSectionsByProject: (projectId: string): Section[] => {
-        const state = useProjectStore.getState() as any;
+        const state = useProjectStore.getState();
         return state.sections.filter((s: Section) => s.projectId === projectId).sort((a: Section, b: Section) => a.order - b.order);
     },
 }));

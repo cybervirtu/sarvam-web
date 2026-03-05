@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Inbox } from './index';
 import { useTaskStore, useProjectStore } from '../../app/store';
-import { Task } from '../../types';
+import { Task, Project } from '../../types';
 
 // Mock the components used within Inbox to isolate the test
 vi.mock('../../components/tasks/TaskList', () => ({
@@ -21,10 +21,10 @@ describe('Inbox Feature', () => {
     beforeEach(() => {
         // Reset and hydrate stores before each test
         useProjectStore.setState({
-            projects: [{ id: 'p1', name: 'Inbox', isInbox: true }],
+            projects: [{ id: 'p1', name: 'Inbox', isInbox: true }] as unknown as Project[],
             isLoading: false,
             fetchProjectsAndLabels: vi.fn(),
-        } as any);
+        } as unknown as ReturnType<typeof useProjectStore.getState>);
         useTaskStore.setState({
             tasks: [
                 { id: '1', title: 'Task 1', isCompleted: false, projectId: 'p1' } as unknown as Task,
@@ -33,7 +33,7 @@ describe('Inbox Feature', () => {
             isLoading: false,
             error: null,
             fetchTasks: vi.fn(),
-        } as any);
+        } as unknown as ReturnType<typeof useTaskStore.getState>);
     });
 
     it('should render the header and title correctly', async () => {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useTaskStore } from './tasks';
 import { useProjectStore } from './projects';
-import { Task } from '../../types';
+import { Task, Project } from '../../types';
 
 describe('Task Store', () => {
     beforeEach(() => {
@@ -145,7 +145,7 @@ describe('Task Store', () => {
         it('getInboxTasks should return tasks with projectId matching the inbox ID', () => {
             // Explicitly set up an inbox project for the selector to find
             useProjectStore.getState().setProjects([
-                { id: 'p1', name: 'Inbox', isInbox: true, color: '#246fe0', order: 0, isFavorite: false, isArchived: false, isShared: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as any
+                { id: 'p1', name: 'Inbox', isInbox: true, color: '#246fe0', order: 0, isFavorite: false, isShared: false, viewStyle: 'list', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as Project
             ]);
 
             const task1 = createMockTask('t1', 'Inbox 1');

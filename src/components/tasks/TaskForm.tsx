@@ -61,9 +61,10 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
     };
 
     return (
-        <div className="bg-background border border-border rounded-2xl p-4 shadow-premium animate-in fade-in zoom-in-95 duration-200 ring-1 ring-primary/5">
+        <div data-testid="task-form" className="bg-background border border-border rounded-2xl p-4 shadow-premium animate-in fade-in zoom-in-95 duration-200 ring-1 ring-primary/5">
             <form onSubmit={handleSubmit} className="space-y-4">
                 <input
+                    data-testid="task-title-input"
                     ref={inputRef}
                     type="text"
                     value={title}
@@ -74,6 +75,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
                 />
 
                 <textarea
+                    data-testid="task-desc-input"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Description"
@@ -110,7 +112,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
                         </div>
 
                         <div className="flex flex-wrap gap-1">
-                            {AVAILABLE_LABELS.map((label: any) => {
+                            {AVAILABLE_LABELS.map((label: { id: string; name: string }) => {
                                 const isActive = selectedLabels.includes(label.id);
                                 return (
                                     <button
@@ -145,6 +147,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTit
                             Cancel
                         </Button>
                         <Button
+                            data-testid="task-save-btn"
                             type="submit"
                             disabled={!title.trim()}
                             size="sm"

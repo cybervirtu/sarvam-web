@@ -84,6 +84,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({
                         </label>
                         <input
                             id="project-name"
+                            data-testid="project-name-input"
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}

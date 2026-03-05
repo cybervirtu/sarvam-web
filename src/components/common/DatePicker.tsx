@@ -84,6 +84,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
                     <Popover.Anchor asChild>
                         <input
+                            data-testid="due-date-input"
+                            aria-label="Due date"
                             type="text"
                             value={inputValue}
                             onChange={handleInputChange}
@@ -100,6 +102,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 {value && (
                     <div className="relative z-10 flex items-center pr-1">
                         <button
+                            data-testid="clear-date-btn"
+                            aria-label="Clear date"
                             type="button"
                             title="Clear date"
                             onClick={(e) => {
