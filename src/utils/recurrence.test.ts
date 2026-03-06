@@ -25,6 +25,12 @@ describe('computeNextOccurrence', () => {
         expect(computeNextOccurrence(task)).toBeNull();
     });
 
+    it('should return null if due date object is missing', () => {
+        const task = createTask('daily');
+        task.due = undefined as any;
+        expect(computeNextOccurrence(task)).toBeNull();
+    });
+
     it('should calculate daily recurrence', () => {
         const task = createTask('daily');
         const next = computeNextOccurrence(task);
@@ -43,10 +49,12 @@ describe('computeNextOccurrence', () => {
         expect(next?.toISOString().split('T')[0]).toBe('2026-04-01');
     });
 
-    it('should calculate "every N days"', () => {
-        const task = createTask('every 3 days');
-        const next = computeNextOccurrence(task);
-        expect(next?.toISOString().split('T')[0]).toBe('2026-03-04');
+    it('should calculate "every N days" (N=2, N=5)', () => {
+        const task2 = createTask('every 2 days');
+        expect(computeNextOccurrence(task2)?.toISOString().split('T')[0]).toBe('2026-03-03');
+
+        const task5 = createTask('every 5 days');
+        expect(computeNextOccurrence(task5)?.toISOString().split('T')[0]).toBe('2026-03-06');
     });
 
     it('should calculate "every N weeks"', () => {

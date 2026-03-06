@@ -92,6 +92,30 @@ describe('Date Utilities (Sprint 4)', () => {
         });
     });
 
+    describe('isDueInRange', () => {
+        const start = new Date('2026-03-06T00:00:00');
+        const end = new Date('2026-03-08T00:00:00');
+
+        it('should return true for tasks strictly within the range', () => {
+            const task = createTask({ date: '2026-03-07', isRecurring: false });
+            expect(isDueInRange(task, start, end)).toBe(true);
+        });
+
+        it('should return true for tasks on the inclusive boundaries', () => {
+            const startTask = createTask({ datetime: '2026-03-06T00:00:00', isRecurring: false });
+            const endTask = createTask({ datetime: '2026-03-08T23:59:59', isRecurring: false });
+            expect(isDueInRange(startTask, start, end)).toBe(true);
+            expect(isDueInRange(endTask, start, end)).toBe(true);
+        });
+
+        it('should return false for tasks outside the range', () => {
+            const beforeTask = createTask({ date: '2026-03-05', isRecurring: false });
+            const afterTask = createTask({ date: '2026-03-09', isRecurring: false });
+            expect(isDueInRange(beforeTask, start, end)).toBe(false);
+            expect(isDueInRange(afterTask, start, end)).toBe(false);
+        });
+    });
+
     describe('groupTasksByDueDate', () => {
         it('should group tasks by DD-MM-YYYY', () => {
             const t1 = createTask({ date: '2026-03-06', isRecurring: false });
