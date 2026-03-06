@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTaskStore, useProjectStore } from '../../app/store';
-import { TaskItem } from '../../components/tasks/TaskItem';
-import { isToday, isOverdue } from '../../utils/date';
-import { Calendar, CheckCircle2, ListFilter, MoreHorizontal, AlertCircle, Plus } from 'lucide-react';
+import { TaskList } from '../../components/tasks/TaskList';
+import { isDueToday, isOverdue, compareTasks } from '../../utils/dates';
+import { Calendar, CheckCircle2, ListFilter, MoreHorizontal, Plus, AlertCircle } from 'lucide-react';
 import { IconButton } from '../../components/common/IconButton';
 import { Button } from '../../components/common/Button';
 import { TaskForm } from '../../components/tasks/TaskForm';
@@ -43,10 +43,18 @@ export const Today = () => {
         month: 'long'
     });
 
-    // Filter tasks
-    const activeTasks = tasks.filter(t => !t.completed).sort((a, b) => (a.order || 0) - (b.order || 0));
-    const overdueTasks = activeTasks.filter(t => t.due?.date && isOverdue(t.due.date));
-    const todayTasks = activeTasks.filter(t => t.due?.date && isToday(t.due.date));
+    // Filter and sort tasks
+    const activeTasks = tasks.filter(t => !t.completed);
+
+    const overdueTasks = activeTasks
+        .filter(t => isOverdue(t))
+        .sort(compareTasks);
+
+    const todayTasks = activeTasks
+        .filter(t => isDueToday(t))
+        .sort(compareTasks);
+
+    const hasNoTasks = overdueTasks.length === 0 && todayTasks.length === 0;
 
     if (isLoading && tasks.length === 0) {
         return (
@@ -92,37 +100,38 @@ export const Today = () => {
                 )}
             </div>
 
-            <div className="space-y-12">
+            <div className="space-y-10">
                 {/* Overdue Section */}
                 {overdueTasks.length > 0 && (
                     <section className="space-y-3">
-                        <div className="flex items-center gap-2 px-1 text-red-500">
+                        <div className="flex items-center gap-2 px-1 text-orange-600/80 dark:text-orange-400/80">
                             <AlertCircle className="w-4 h-4" />
-                            <h3 className="text-sm font-bold tracking-tight uppercase">Overdue</h3>
+                            <h3 className="text-xs font-bold tracking-wider uppercase">Overdue</h3>
                         </div>
-                        <div className="space-y-1">
-                            {overdueTasks.map(task => (
-                                <TaskItem key={task.id} task={task} />
-                            ))}
-                        </div>
+                        <TaskList
+                            tasks={overdueTasks}
+                            isLoading={isLoading}
+                            hideAddButton={true}
+                        />
                     </section>
                 )}
 
                 {/* Today Section */}
                 <section className="space-y-3">
                     {overdueTasks.length > 0 && (
-                        <div className="px-1 border-b border-border/50 pb-2">
-                            <h3 className="text-sm font-bold tracking-tight text-foreground/70 uppercase">Today</h3>
+                        <div className="px-1 border-b border-border/50 pb-2 mb-2">
+                            <h3 className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Today</h3>
                         </div>
                     )}
 
-                    <div className="space-y-1">
-                        {todayTasks.map(task => (
-                            <TaskItem key={task.id} task={task} />
-                        ))}
-                    </div>
+                    <TaskList
+                        tasks={todayTasks}
+                        isLoading={isLoading}
+                        emptyMessage="All clear for today!"
+                        hideAddButton={true}
+                    />
 
-                    {todayTasks.length === 0 && overdueTasks.length === 0 && !isAdding && (
+                    {hasNoTasks && !isLoading && !isAdding && (
                         <div className="py-20 flex flex-col items-center justify-center text-center space-y-6">
                             <div className="relative">
                                 <CheckCircle2 className="w-20 h-20 text-emerald-500/20" />
@@ -149,7 +158,6 @@ export const Today = () => {
                     )}
                 </section>
             </div>
-
         </div>
     );
 };
