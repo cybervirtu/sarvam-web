@@ -24,15 +24,14 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Set all CORS enabled origins
-if settings.CORS_ORIGINS:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.CORS_ORIGINS],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+# Set up strict cookie-safe CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[settings.FRONTEND_ORIGIN],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept"],
+)
 
 @app.get("/health", tags=["health"])
 async def health_check():

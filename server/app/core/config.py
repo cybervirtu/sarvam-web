@@ -8,8 +8,12 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/sarvam"
     
-    # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
+    # Auth & Cookies
+    FRONTEND_ORIGIN: str = "http://localhost:5173"
+    COOKIE_SECURE: bool = False
+    COOKIE_SAMESITE: str = "lax"
+    SESSION_TTL_DAYS: int = 30
+    SESSION_SECRET: str = "super_secret_dev_key_change_in_production"
 
     class Config:
         case_sensitive = True
