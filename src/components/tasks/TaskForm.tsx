@@ -17,13 +17,21 @@ interface TaskFormProps {
     }) => void;
     onCancel: () => void;
     initialTitle?: string;
+    initialDueDate?: { date: string; isRecurring: boolean } | null;
+    initialPriority?: Priority;
 }
 
-export const TaskForm: React.FC<TaskFormProps> = ({ onSave, onCancel, initialTitle = '' }) => {
+export const TaskForm: React.FC<TaskFormProps> = ({
+    onSave,
+    onCancel,
+    initialTitle = '',
+    initialDueDate = null,
+    initialPriority = 4
+}) => {
     const [title, setTitle] = useState(initialTitle);
     const [description, setDescription] = useState('');
-    const [priority, setPriority] = useState<Priority>(4);
-    const [dueDate, setDueDate] = useState<string | null>(null);
+    const [priority, setPriority] = useState<Priority>(initialPriority);
+    const [dueDate, setDueDate] = useState<string | null>(initialDueDate?.date || null);
     const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
 

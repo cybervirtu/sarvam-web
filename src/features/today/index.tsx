@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTaskStore, useProjectStore } from '../../app/store';
 import { TaskList } from '../../components/tasks/TaskList';
 import { isDueToday, isOverdue, compareTasks } from '../../utils/dates';
@@ -6,6 +6,7 @@ import { Calendar, CheckCircle2, ListFilter, MoreHorizontal, Plus, AlertCircle }
 import { IconButton } from '../../components/common/IconButton';
 import { Button } from '../../components/common/Button';
 import { TaskForm } from '../../components/tasks/TaskForm';
+import { GroupHeader } from '../../components/tasks/GroupHeader';
 import { Priority } from '../../types';
 
 export const Today = () => {
@@ -37,29 +38,35 @@ export const Today = () => {
         setIsAdding(false);
     };
 
-    const todayStr = new Date().toLocaleDateString('en-US', {
+    const todayStr = useMemo(() => new Date().toLocaleDateString('en-US', {
         weekday: 'long',
         day: 'numeric',
         month: 'long'
-    });
+    }), []);
 
-    // Filter and sort tasks
-    const activeTasks = tasks.filter(t => !t.completed);
+    // Memoized filter and sort tasks
+    const { overdueTasks, todayTasks, hasNoTasks } = useMemo(() => {
+        const activeTasks = tasks.filter(t => !t.completed);
 
-    const overdueTasks = activeTasks
-        .filter(t => isOverdue(t))
-        .sort(compareTasks);
+        const overdue = activeTasks
+            .filter(t => isOverdue(t))
+            .sort(compareTasks);
 
-    const todayTasks = activeTasks
-        .filter(t => isDueToday(t))
-        .sort(compareTasks);
+        const today = activeTasks
+            .filter(t => isDueToday(t))
+            .sort(compareTasks);
 
-    const hasNoTasks = overdueTasks.length === 0 && todayTasks.length === 0;
+        return {
+            overdueTasks: overdue,
+            todayTasks: today,
+            hasNoTasks: overdue.length === 0 && today.length === 0
+        };
+    }, [tasks]);
 
     if (isLoading && tasks.length === 0) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="animate-pulse text-muted-foreground">Loading your day...</div>
+                <div className="animate-pulse text-muted-foreground font-medium italic">Loading your day...</div>
             </div>
         );
     }
@@ -85,17 +92,21 @@ export const Today = () => {
 
             <div className="mb-8">
                 {isAdding ? (
-                    <TaskForm
-                        onSave={handleSaveTask}
-                        onCancel={() => setIsAdding(false)}
-                    />
+                    <div className="animate-in slide-in-from-top-2 duration-300">
+                        <TaskForm
+                            onSave={handleSaveTask}
+                            onCancel={() => setIsAdding(false)}
+                        />
+                    </div>
                 ) : (
                     <button
                         onClick={() => setIsAdding(true)}
-                        className="flex items-center gap-3 text-sm text-muted-foreground hover:text-primary transition-colors group w-full px-4 py-3 rounded-xl hover:bg-primary/5 border border-transparent hover:border-primary/10"
+                        className="flex items-center gap-3 text-sm text-muted-foreground hover:text-primary transition-all group w-full px-4 py-3 rounded-xl hover:bg-primary/5 border border-dashed border-border/50 hover:border-primary/20"
                     >
-                        <Plus className="w-4 h-4 text-primary transition-transform group-hover:scale-125 duration-300" />
-                        <span className="font-medium">Add task</span>
+                        <div className="w-6 h-6 rounded-lg bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                            <Plus className="w-4 h-4 text-primary transition-transform group-hover:scale-125 duration-300" />
+                        </div>
+                        <span className="font-semibold tracking-tight">Add a task due today...</span>
                     </button>
                 )}
             </div>
@@ -103,11 +114,13 @@ export const Today = () => {
             <div className="space-y-10">
                 {/* Overdue Section */}
                 {overdueTasks.length > 0 && (
-                    <section className="space-y-3">
-                        <div className="flex items-center gap-2 px-1 text-orange-600/80 dark:text-orange-400/80">
-                            <AlertCircle className="w-4 h-4" />
-                            <h3 className="text-xs font-bold tracking-wider uppercase">Overdue</h3>
-                        </div>
+                    <section className="animate-in slide-in-from-left-2 duration-500">
+                        <GroupHeader
+                            label="Overdue"
+                            icon={AlertCircle}
+                            count={overdueTasks.length}
+                            variant="overdue"
+                        />
                         <TaskList
                             tasks={overdueTasks}
                             isLoading={isLoading}
@@ -117,11 +130,12 @@ export const Today = () => {
                 )}
 
                 {/* Today Section */}
-                <section className="space-y-3">
+                <section className="space-y-3 animate-in fade-in duration-700">
                     {overdueTasks.length > 0 && (
-                        <div className="px-1 border-b border-border/50 pb-2 mb-2">
-                            <h3 className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Today</h3>
-                        </div>
+                        <GroupHeader
+                            label="Today"
+                            count={todayTasks.length}
+                        />
                     )}
 
                     <TaskList
@@ -132,27 +146,28 @@ export const Today = () => {
                     />
 
                     {hasNoTasks && !isLoading && !isAdding && (
-                        <div className="py-20 flex flex-col items-center justify-center text-center space-y-6">
+                        <div className="py-20 flex flex-col items-center justify-center text-center space-y-8 animate-in zoom-in-95 duration-700">
                             <div className="relative">
-                                <CheckCircle2 className="w-20 h-20 text-emerald-500/20" />
+                                <div className="absolute -inset-4 bg-emerald-500/10 rounded-full blur-2xl animate-pulse" />
+                                <CheckCircle2 className="w-20 h-20 text-emerald-500/10 relative" />
                                 <div className="absolute inset-0 flex items-center justify-center">
                                     <CheckCircle2 className="w-10 h-10 text-emerald-500 animate-bounce-subtle" />
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <h3 className="text-xl font-bold">All clear for today!</h3>
-                                <p className="text-muted-foreground text-sm max-w-xs">
-                                    You've completed all your tasks for today. Enjoy your productive momentum!
+                            <div className="space-y-3">
+                                <h3 className="text-xl font-bold tracking-tight">Focus on what matters most</h3>
+                                <p className="text-muted-foreground text-sm max-w-xs leading-relaxed italic">
+                                    Your today's schedule is blooming with potential. What's the one thing you'd love to achieve right now?
                                 </p>
                             </div>
                             <Button
-                                variant="outline"
+                                variant="default"
                                 size="sm"
-                                className="rounded-full px-6"
+                                className="rounded-2xl px-8 h-11 shadow-premium font-bold tracking-tight"
                                 onClick={() => setIsAdding(true)}
                             >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add a new task
+                                <Plus className="w-5 h-5 mr-2" />
+                                Create your first goal
                             </Button>
                         </div>
                     )}

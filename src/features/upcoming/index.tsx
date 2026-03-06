@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTaskStore, useProjectStore } from '../../app/store';
 import { TaskList } from '../../components/tasks/TaskList';
 import {
@@ -9,10 +9,11 @@ import {
     startOfDay,
     isOverdue
 } from '../../utils/dates';
-import { CalendarDays, ListFilter, MoreHorizontal, ChevronRight, Plus, AlertCircle } from 'lucide-react';
+import { CalendarDays, ListFilter, MoreHorizontal, Plus, AlertCircle } from 'lucide-react';
 import { IconButton } from '../../components/common/IconButton';
 import { Button } from '../../components/common/Button';
 import { TaskForm } from '../../components/tasks/TaskForm';
+import { GroupHeader } from '../../components/tasks/GroupHeader';
 import { Priority } from '../../types';
 import { format } from 'date-fns';
 
@@ -30,22 +31,28 @@ export const Upcoming = () => {
         }
     }, [tasks.length, projects.length, fetchTasks, fetchProjectsAndLabels]);
 
-    const now = new Date();
-    const startDate = startOfDay(now);
-    const endDate = addDays(startDate, 6); // 7 days inclusive
+    const { days, overdueTasks, groupedTasks, hasAnyTasks } = useMemo(() => {
+        const now = new Date();
+        const start = startOfDay(now);
+        const end = addDays(start, 6); // 7 days inclusive
+        const activeTasks = tasks.filter(t => !t.completed);
 
-    const activeTasks = tasks.filter(t => !t.completed);
+        const overdue = activeTasks
+            .filter(t => isOverdue(t))
+            .sort(compareTasks);
 
-    // Grouped tasks for the next 7 days
-    const groupedTasks = groupTasksByDueDate(activeTasks, startDate, endDate);
+        const grouped = groupTasksByDueDate(activeTasks, start, end);
+        const sevenDays = Array.from({ length: 7 }, (_, i) => addDays(start, i));
+        const hasUpcoming = Object.values(grouped).some(group => group.length > 0);
 
-    // Overdue tasks
-    const overdueTasks = activeTasks
-        .filter(t => isOverdue(t))
-        .sort(compareTasks);
-
-    // Generate array of date objects for the next 7 days for consistent rendering
-    const days = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
+        return {
+            days: sevenDays,
+            overdueTasks: overdue,
+            groupedTasks: grouped,
+            hasAnyTasks: overdue.length > 0 || hasUpcoming,
+            startDate: start
+        };
+    }, [tasks]);
 
     const handleSaveTask = (taskData: {
         title: string;
@@ -64,13 +71,10 @@ export const Upcoming = () => {
     if (isLoading && tasks.length === 0) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="animate-pulse text-muted-foreground">Loading upcoming weeks...</div>
+                <div className="animate-pulse text-muted-foreground font-medium italic">Loading upcoming weeks...</div>
             </div>
         );
     }
-
-    const hasAnyUpcomingTasks = Object.values(groupedTasks).some(tasks => tasks.length > 0);
-    const hasAnyTasks = overdueTasks.length > 0 || hasAnyUpcomingTasks;
 
     return (
         <div className="max-w-3xl mx-auto py-8 px-4 animate-in fade-in duration-500">
@@ -91,14 +95,16 @@ export const Upcoming = () => {
                 </div>
             </header>
 
-            <div className="space-y-10">
+            <div className="space-y-12">
                 {/* Overdue Section */}
                 {overdueTasks.length > 0 && (
-                    <section className="group/section">
-                        <header className="flex items-center gap-2 py-2 px-1 border-b border-border/50 mb-4 sticky top-0 bg-background/80 backdrop-blur-sm z-10 text-orange-600/80 dark:text-orange-400/80">
-                            <AlertCircle className="w-4 h-4" />
-                            <h3 className="text-sm font-bold tracking-tight uppercase">Overdue</h3>
-                        </header>
+                    <section className="animate-in slide-in-from-left-2 duration-500">
+                        <GroupHeader
+                            label="Overdue"
+                            icon={AlertCircle}
+                            count={overdueTasks.length}
+                            variant="overdue"
+                        />
                         <TaskList
                             tasks={overdueTasks}
                             isLoading={false}
@@ -108,7 +114,7 @@ export const Upcoming = () => {
                 )}
 
                 {/* Grouped Upcoming Tasks */}
-                {days.map((date) => {
+                {days.map((date, index) => {
                     const dateKey = format(date, 'dd-MM-yyyy');
                     const isoKey = format(date, 'yyyy-MM-dd');
                     const dayTasks = (groupedTasks[dateKey] || []).sort(compareTasks);
@@ -116,39 +122,31 @@ export const Upcoming = () => {
                     const isAddingThisDate = addingDate === isoKey;
 
                     return (
-                        <section key={dateKey} className="group/section">
-                            <header className="flex items-center justify-between py-2 px-1 border-b border-border/50 mb-4 sticky top-0 bg-background/80 backdrop-blur-sm z-10">
-                                <div className="flex items-center gap-3">
-                                    <h3 className={`text-sm font-bold tracking-tight lowercase first-letter:uppercase ${dayTasks.length > 0 ? 'text-foreground/90' : 'text-muted-foreground/50'}`}>
-                                        {displayLabel}
-                                    </h3>
-                                    {dayTasks.length > 0 && (
-                                        <>
-                                            <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
-                                            <span className="text-[10px] font-medium text-muted-foreground/40">
-                                                {dayTasks.length} {dayTasks.length === 1 ? 'task' : 'tasks'}
-                                            </span>
-                                        </>
-                                    )}
-                                </div>
-
-                                {!isAddingThisDate && (
-                                    <button
-                                        onClick={() => setAddingDate(isoKey)}
-                                        className="opacity-0 group-hover/section:opacity-100 p-1 hover:bg-muted rounded-md transition-all text-muted-foreground hover:text-primary"
-                                        title="Add task"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                    </button>
-                                )}
-                            </header>
+                        <section key={dateKey} className={`group/section animate-in fade-in duration-500 delay-${(index + 1) * 100}`}>
+                            <GroupHeader
+                                label={displayLabel}
+                                count={dayTasks.length}
+                                variant={dayTasks.length > 0 ? 'default' : 'dimmed'}
+                                rightElement={
+                                    !isAddingThisDate && (
+                                        <button
+                                            onClick={() => setAddingDate(isoKey)}
+                                            className="opacity-0 group-hover/section:opacity-100 p-1.5 hover:bg-primary/10 rounded-lg transition-all text-primary"
+                                            title="Add task"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                        </button>
+                                    )
+                                }
+                            />
 
                             <div className="space-y-1">
                                 {isAddingThisDate && (
-                                    <div className="mt-2 mb-6 px-1">
+                                    <div className="mt-2 mb-6 px-1 animate-in slide-in-from-top-2 duration-300">
                                         <TaskForm
                                             onSave={handleSaveTask}
                                             onCancel={() => setAddingDate(null)}
+                                            initialDueDate={{ date: isoKey, isRecurring: false }}
                                         />
                                     </div>
                                 )}
@@ -162,10 +160,10 @@ export const Upcoming = () => {
                                 {dayTasks.length === 0 && !isAddingThisDate && (
                                     <div
                                         onClick={() => setAddingDate(isoKey)}
-                                        className="py-6 px-4 rounded-2xl border border-dashed border-border/20 text-center group/empty transition-all hover:border-primary/20 hover:bg-primary/5 cursor-pointer mb-2"
+                                        className="py-4 px-4 rounded-xl border border-dashed border-border/10 text-center group/empty transition-all hover:border-primary/20 hover:bg-primary/5 cursor-pointer mb-2"
                                     >
-                                        <p className="text-[11px] text-muted-foreground/30 group-hover/empty:text-primary/60 transition-colors">
-                                            No tasks scheduled. Click to add one.
+                                        <p className="text-[11px] font-medium text-muted-foreground/20 group-hover/empty:text-primary/60 transition-colors uppercase tracking-widest">
+                                            No tasks scheduled
                                         </p>
                                     </div>
                                 )}
@@ -176,29 +174,38 @@ export const Upcoming = () => {
             </div>
 
             {!hasAnyTasks && !isLoading && (
-                <div className="mt-12 py-16 px-4 bg-muted/30 rounded-[2rem] text-center border border-border/50 animate-in zoom-in-95 duration-500">
-                    <div className="w-16 h-16 bg-background rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm ring-1 ring-border/50">
-                        <CalendarDays className="w-8 h-8 text-indigo-500/40" />
+                <div className="mt-12 py-20 px-4 bg-muted/20 rounded-[2.5rem] text-center border border-border/50 animate-in zoom-in-95 duration-700">
+                    <div className="relative mb-8">
+                        <div className="absolute -inset-4 bg-indigo-500/10 rounded-full blur-2xl animate-pulse" />
+                        <CalendarDays className="w-20 h-20 text-indigo-500/10 mx-auto relative" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <Plus className="w-8 h-8 text-indigo-500 animate-bounce-subtle" />
+                        </div>
                     </div>
-                    <h3 className="text-lg font-bold mb-2">Your week looks clear!</h3>
-                    <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-8">
-                        No tasks scheduled for the next 7 days. Take some time to plan your upcoming goals or enjoy the breathing room.
-                    </p>
+                    <div className="space-y-3 mb-10">
+                        <h3 className="text-xl font-bold tracking-tight">Your week is an open canvas</h3>
+                        <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed italic">
+                            The next 7 days are completely clear. Why not schedule some time for a passion project or a well-deserved break?
+                        </p>
+                    </div>
                     <Button
                         variant="default"
                         size="sm"
-                        className="rounded-full shadow-premium"
-                        onClick={() => setAddingDate(format(startDate, 'yyyy-MM-dd'))}
+                        className="rounded-2xl px-10 h-12 shadow-premium font-bold tracking-tight"
+                        onClick={() => setAddingDate(format(days[0], 'yyyy-MM-dd'))}
                     >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Schedule first task
+                        <Plus className="w-5 h-5 mr-3" />
+                        Start planning your week
                     </Button>
                 </div>
             )}
 
-            <div className="mt-16 pt-10 border-t border-border/50 text-center">
-                <p className="text-xs text-muted-foreground/60 italic max-w-sm mx-auto leading-relaxed">
-                    Looking further ahead? You can view all tasks by date in the calendar view coming soon in a future sprint.
+            <div className="mt-20 pt-10 border-t border-border/30 text-center">
+                <p className="text-[11px] font-semibold text-muted-foreground/30 uppercase tracking-[0.2em] max-w-xs mx-auto leading-relaxed">
+                    Extended planning coming soon
+                </p>
+                <p className="text-xs text-muted-foreground/40 mt-2 italic px-10">
+                    Full calendar views and multi-week planning are currently under development.
                 </p>
             </div>
         </div>
