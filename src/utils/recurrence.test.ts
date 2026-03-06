@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computeNextOccurrence } from './recurrence';
 import { Task } from '../types';
-import { parseISO } from 'date-fns';
 
 describe('computeNextOccurrence', () => {
     const baseDate = '2026-03-01'; // Sunday

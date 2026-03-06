@@ -86,3 +86,21 @@ export interface Task {
     updatedAt: string;
     completedAt?: string | null;
 }
+
+// --- Filters ---
+export type FilterCriteriaKind = 'due' | 'priority' | 'label' | 'project' | 'completed';
+
+export interface FilterCriteria {
+    kind: FilterCriteriaKind;
+    value: string | number | boolean; // e.g., "today", 1, "label-id", "project-id", true
+}
+
+export interface SavedFilter {
+    id: string;
+    name: string;
+    criteria: FilterCriteria[];
+    color?: string;
+    isFavorite?: boolean;
+    createdAt: string;
+    updatedAt: string;
+}

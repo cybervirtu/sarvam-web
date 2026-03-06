@@ -9,6 +9,7 @@ const UpcomingPage = lazy(() => import('../../features/upcoming').then(mod => ({
 const ProjectsPage = lazy(() => import('../../features/projects').then(mod => ({ default: mod.Projects })));
 const LabelsPage = lazy(() => import('../../features/labels').then(mod => ({ default: mod.Labels })));
 const FiltersPage = lazy(() => import('../../features/filters').then(mod => ({ default: mod.Filters })));
+const FilterResultsPage = lazy(() => import('../../features/filters').then(mod => ({ default: mod.FilterResults })));
 
 const SuspenseFallback = () => (
     <div className="flex-1 flex items-center justify-center min-h-[50vh] text-slate-400">
@@ -30,6 +31,7 @@ const AppRouter = () => {
                         <Route path="/projects/:id" element={<ProjectsPage />} />
                         <Route path="/labels" element={<LabelsPage />} />
                         <Route path="/filters" element={<FiltersPage />} />
+                        <Route path="/filters/:filterId" element={<FilterResultsPage />} />
                     </Routes>
                 </Suspense>
             </Layout>
