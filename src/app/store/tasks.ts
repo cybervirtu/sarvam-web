@@ -3,6 +3,8 @@ import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { Task, DueDate, Priority } from '../../types';
 import { getTasks } from '../../services/mocks';
 import { debounce } from '../../utils/debounce';
+import { computeNextOccurrence } from '../../utils/recurrence';
+import { format } from 'date-fns';
 
 export type NewTaskPayload = {
     title: string;
@@ -168,7 +170,6 @@ export const useTaskStore = create<TaskState>()(
                         return task;
                     });
                 }
-
                 return { tasks: updatedTasks };
             }),
 
@@ -176,11 +177,32 @@ export const useTaskStore = create<TaskState>()(
                 tasks: state.tasks.map((task) => {
                     if (task.id === id) {
                         const isNowCompleted = !task.completed;
+                        const now = new Date().toISOString();
+
+                        // 1. If completing a recurring task, advance its due date instead of closing it
+                        if (isNowCompleted && task.due?.isRecurring && task.due.recurrenceRule) {
+                            const nextDate = computeNextOccurrence(task);
+                            if (nextDate) {
+                                return {
+                                    ...task,
+                                    completed: false, // Stay active
+                                    completedAt: now,  // Record completion history
+                                    updatedAt: now,
+                                    due: {
+                                        ...task.due,
+                                        date: format(nextDate, 'yyyy-MM-dd'),
+                                        datetime: task.due.datetime ? nextDate.toISOString() : undefined
+                                    }
+                                };
+                            }
+                        }
+
+                        // 2. Standard toggle logic
                         return {
                             ...task,
                             completed: isNowCompleted,
-                            completedAt: isNowCompleted ? new Date().toISOString() : null,
-                            updatedAt: new Date().toISOString()
+                            completedAt: isNowCompleted ? now : null,
+                            updatedAt: now
                         };
                     }
                     return task;

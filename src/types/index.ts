@@ -13,7 +13,7 @@ export interface DueDate {
     datetime?: string; // ISO 8601 extended format for specific times
     timezone?: string; // Timezone designation, e.g., 'America/Los_Angeles'
     isRecurring: boolean;
-    recurringString?: string; // e.g., "every weekday" or RRULE format
+    recurrenceRule?: string | null; // e.g., "daily", "weekly", "every 3 days"
 }
 
 // --- Reminder ---

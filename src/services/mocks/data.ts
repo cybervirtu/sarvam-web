@@ -123,7 +123,7 @@ export const MOCK_TASKS: Task[] = [
         due: {
             date: dateAhead(1), // Tomorrow
             isRecurring: true,
-            recurringString: 'every week'
+            recurrenceRule: 'weekly'
         },
         labels: ['personal-456'],
         order: 2,
