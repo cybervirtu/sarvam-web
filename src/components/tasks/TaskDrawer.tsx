@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Flag, Hash, Trash2, CheckCircle2, Circle } from 'lucide-react';
+import { X, Flag, Hash, Trash2, CheckCircle2, Circle, Plus } from 'lucide-react';
 import { useTaskStore, useUIStore, useProjectStore } from '../../app/store';
 import { IconButton } from '../common/IconButton';
 import { Button } from '../common/Button';
@@ -7,11 +7,23 @@ import { cn } from '../../lib/utils';
 import { Priority, Project, Section } from '../../types';
 import { PRIORITY_OPTIONS, AVAILABLE_LABELS } from './constants';
 import { DatePicker } from '../common/DatePicker';
+import { TaskItem } from './TaskItem';
 
 export const TaskDrawer = () => {
     const { activeTaskId, closeTaskDrawer } = useUIStore();
-    const { tasks, updateTask, deleteTask, toggleTaskCompletion } = useTaskStore();
-    const { projects, getSectionsByProject } = useProjectStore();
+
+    // Use individual selectors for reactivity and performance
+    const tasks = useTaskStore((state) => state.tasks);
+    const updateTask = useTaskStore((state) => state.updateTask);
+    const deleteTask = useTaskStore((state) => state.deleteTask);
+    const toggleTaskCompletion = useTaskStore((state) => state.toggleTaskCompletion);
+    const createSubtask = useTaskStore((state) => state.createSubtask);
+
+    const projects = useProjectStore((state) => state.projects);
+    const getSectionsByProject = useProjectStore((state) => state.getSectionsByProject);
+    const getEligibleParents = useTaskStore((state) => state.getEligibleParents);
+    const setTaskParent = useTaskStore((state) => state.setTaskParent);
+    const openTaskDrawer = useUIStore((state) => state.openTaskDrawer);
 
     const task = tasks.find(t => t.id === activeTaskId);
 
@@ -19,6 +31,17 @@ export const TaskDrawer = () => {
     const [description, setDescription] = useState('');
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const [availableSections, setAvailableSections] = useState<Section[]>([]);
+    const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+    const [parentSearch, setParentSearch] = useState('');
+    const [showParentSearch, setShowParentSearch] = useState(false);
+
+    const subtasks = tasks.filter(t => t.parentId === task?.id).sort((a, b) => (a.order || 0) - (b.order || 0));
+    const parentTask = task?.parentId ? tasks.find(t => t.id === task.parentId) : null;
+    const eligibleParents = task ? getEligibleParents(task.projectId || 'p1', task.id) : [];
+
+    const filteredEligibleParents = eligibleParents.filter(p =>
+        p.title.toLowerCase().includes(parentSearch.toLowerCase())
+    );
 
     useEffect(() => {
         if (task) {
@@ -71,6 +94,12 @@ export const TaskDrawer = () => {
             ? task.labels.filter(id => id !== labelId)
             : [...task.labels, labelId];
         updateTask(task.id, { labels: newLabels });
+    };
+
+    const handleAddSubtask = () => {
+        if (!newSubtaskTitle.trim() || !task) return;
+        createSubtask(task.id, newSubtaskTitle.trim());
+        setNewSubtaskTitle('');
     };
 
     return (
@@ -241,6 +270,98 @@ export const TaskDrawer = () => {
                         </div>
                     </div>
 
+                    {/* Parent Context */}
+                    <div className="space-y-3 pt-2 border-t border-border/20">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                <span>Parent Task</span>
+                            </div>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-[10px] px-2 hover:bg-primary/5 text-primary/70"
+                                onClick={() => setShowParentSearch(!showParentSearch)}
+                            >
+                                {task.parentId ? 'Change' : 'Set Parent'}
+                            </Button>
+                        </div>
+
+                        {parentTask && !showParentSearch && (
+                            <div
+                                className="flex items-center justify-between p-3 rounded-xl border border-border/40 bg-muted/5 hover:bg-muted/10 transition-all cursor-pointer group"
+                                onClick={() => openTaskDrawer(parentTask.id)}
+                            >
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-primary/40 shrink-0" />
+                                    <span className="text-sm font-medium truncate">{parentTask.title}</span>
+                                </div>
+                                <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">Open Parent →</span>
+                            </div>
+                        )}
+
+                        {showParentSearch && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                <div className="relative">
+                                    <Plus className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                                    <input
+                                        autoFocus
+                                        type="text"
+                                        placeholder="Search top-level tasks..."
+                                        value={parentSearch}
+                                        onChange={(e) => setParentSearch(e.target.value)}
+                                        className="w-full h-9 rounded-xl border border-border/40 bg-muted/20 pl-9 pr-3 text-xs outline-none focus:border-primary/30 transition-all"
+                                    />
+                                </div>
+
+                                <div className="max-h-[200px] overflow-y-auto rounded-xl border border-border/30 shadow-inner bg-muted/5 flex flex-col">
+                                    {task.parentId && (
+                                        <button
+                                            onClick={() => {
+                                                setTaskParent(task.id, null);
+                                                setShowParentSearch(false);
+                                                setParentSearch('');
+                                            }}
+                                            className="w-full px-3 py-2 text-left text-xs text-destructive hover:bg-destructive/5 border-b border-border/10 transition-colors"
+                                        >
+                                            Remove current parent (Make top-level)
+                                        </button>
+                                    )}
+                                    {filteredEligibleParents.length === 0 ? (
+                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground/50 italic">
+                                            No eligible parent tasks found
+                                        </div>
+                                    ) : (
+                                        filteredEligibleParents.map(p => (
+                                            <button
+                                                key={p.id}
+                                                onClick={() => {
+                                                    setTaskParent(task.id, p.id);
+                                                    setShowParentSearch(false);
+                                                    setParentSearch('');
+                                                }}
+                                                className="w-full px-3 py-2 text-left text-xs hover:bg-primary/5 transition-colors border-b border-border/5 last:border-none truncate"
+                                                title={p.title}
+                                            >
+                                                {p.title}
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full h-7 text-[10px] text-muted-foreground"
+                                    onClick={() => {
+                                        setShowParentSearch(false);
+                                        setParentSearch('');
+                                    }}
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Labels */}
                     <div className="space-y-3">
                         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -269,6 +390,37 @@ export const TaskDrawer = () => {
                                     </button>
                                 );
                             })}
+                        </div>
+                    </div>
+
+                    {/* Subtasks */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            <span>Subtasks</span>
+                        </div>
+                        <div className="space-y-1">
+                            {subtasks.map(subtask => (
+                                <TaskItem key={subtask.id} task={subtask} isSubtask={true} />
+                            ))}
+                            <div className="flex items-center gap-3 p-3 rounded-xl border border-border/40 bg-muted/10 focus-within:bg-muted/30 focus-within:border-primary/30 transition-all mt-2">
+                                <Plus className="w-4 h-4 text-muted-foreground" />
+                                <input
+                                    data-testid="add-subtask-input"
+                                    type="text"
+                                    value={newSubtaskTitle}
+                                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && newSubtaskTitle.trim()) {
+                                            handleAddSubtask();
+                                        }
+                                    }}
+                                    placeholder="Add subtask..."
+                                    className="bg-transparent border-none outline-none text-sm placeholder:text-muted-foreground/50 w-full"
+                                />
+                                {newSubtaskTitle.trim() && (
+                                    <Button data-testid="add-subtask-btn" size="sm" onClick={handleAddSubtask} className="h-7 text-xs px-2">Add</Button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

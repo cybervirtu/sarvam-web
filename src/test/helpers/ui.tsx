@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import '@testing-library/jest-dom';
 import App from '@/App';
 import { useTaskStore, useProjectStore, useUIStore } from '@/app/store';
 
@@ -30,11 +31,15 @@ export const resetState = () => {
     });
 };
 
-// Clicks on a task (by looking for its title inside a task-item testid or directly by text) and waits for the Drawer to appear.
 export const openTaskDrawer = async (user: ReturnType<typeof userEvent.setup>, taskTitle: string) => {
-    // Find task item by text (it should be visible in the list)
-    const taskEl = await screen.findByText(taskTitle);
-    await user.click(taskEl);
+    // Find task title by text
+    const titleEl = await screen.findByText(taskTitle);
+    // Find the closest task-item container which has the onClick handler
+    const taskItem = titleEl.closest('[data-testid^="task-item-"]');
+    if (!taskItem) throw new Error(`Could not find task-item container for: ${taskTitle}`);
+
+    // Using user.click for better reliability in tests
+    await user.click(taskItem);
     await waitForDrawer();
 };
 

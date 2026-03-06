@@ -9,17 +9,74 @@ import { Button } from '../../components/common/Button';
 import { TaskForm } from '../../components/tasks/TaskForm';
 import { ProjectModal } from '../../components/projects/ProjectModal';
 import { Priority, Project, Task, Section } from '../../types';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+    DragStartEvent,
+    DragOverlay,
+    defaultDropAnimationSideEffects,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+import { createPortal } from 'react-dom';
+import { TaskItem } from '../../components/tasks/TaskItem';
+import { useDroppable } from '@dnd-kit/core';
+import { cn } from '../../utils/cn';
+
+const dropAnimation = {
+    sideEffects: defaultDropAnimationSideEffects({
+        styles: {
+            active: {
+                opacity: '0.5',
+            },
+        },
+    }),
+};
 
 export const Projects = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { projects, sections, fetchProjectsAndLabels, fetchSections, isLoading: isProjectLoading, addProject, updateProject, deleteProject, getInboxProjectId, addSection } = useProjectStore();
-    const { tasks, isLoading: isTasksLoading, fetchTasks, addTask, moveTasksToInbox, getTasksBySection, getUnsectionedTasks } = useTaskStore();
+
+    // Proper individual selectors for better reactivity and performance
+    const tasks = useTaskStore((state) => state.tasks);
+    const isTasksLoading = useTaskStore((state) => state.isLoading);
+    const fetchTasks = useTaskStore((state) => state.fetchTasks);
+    const addTask = useTaskStore((state) => state.addTask);
+    const moveTasksToInbox = useTaskStore((state) => state.moveTasksToInbox);
+    const getTasksBySection = useTaskStore((state) => state.getTasksBySection);
+    const getUnsectionedTasks = useTaskStore((state) => state.getUnsectionedTasks);
+    const reorderTasksWithinSection = useTaskStore((state) => state.reorderTasksWithinSection);
+    const moveTaskToSection = useTaskStore((state) => state.moveTaskToSection);
+
     const [isAdding, setIsAdding] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | undefined>();
     const [isAddingSection, setIsAddingSection] = useState(false);
     const [newSectionName, setNewSectionName] = useState('');
+    const [activeId, setActiveId] = useState<string | null>(null);
+
+    const { setNodeRef: setUnsectionedRef, isOver: isOverUnsectioned } = useDroppable({
+        id: 'section:none',
+    });
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 10,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     useEffect(() => {
         if (projects.length === 0) {
@@ -59,6 +116,11 @@ export const Projects = () => {
         [id, getUnsectionedTasks, tasks]
     );
 
+    const activeTask = useMemo(
+        () => tasks.find((t) => t.id === activeId),
+        [activeId, tasks]
+    );
+
     const handleSaveTask = (taskData: {
         title: string;
         description?: string;
@@ -81,6 +143,101 @@ export const Projects = () => {
             setNewSectionName('');
             setIsAddingSection(false);
         }
+    };
+
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveId(event.active.id as string);
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (over) {
+            const activeId = active.id as string;
+            const overId = over.id as string;
+
+            const activeTask = tasks.find(t => t.id === activeId);
+            if (!activeTask) {
+                setActiveId(null);
+                return;
+            }
+
+            // 1. Handle Re-parenting (Dropped onto a parent droppable)
+            if (overId.startsWith('parent:')) {
+                const newParentId = overId.replace('parent:', '');
+                if (activeId !== newParentId) {
+                    const moveSubtaskToParent = useTaskStore.getState().moveSubtaskToParent;
+                    // Find target tasks under this parent to get the index (drop at end by default)
+                    const targetSubtasks = tasks.filter(t => t.parentId === newParentId);
+                    moveSubtaskToParent(activeId, newParentId, targetSubtasks.length);
+                }
+                setActiveId(null);
+                return;
+            }
+
+            // 2. Handle Moving/Sorting
+            let toSectionId: string | null = null;
+            let toParentId: string | null = null;
+            let toIndex = 0;
+
+            if (overId.startsWith('section:')) {
+                // Dragged directly over a section container
+                toSectionId = overId.replace('section:', '');
+                if (toSectionId === 'none') toSectionId = null;
+                const targetTasks = toSectionId ? (tasksBySection[toSectionId] || []) : unsectionedTasks;
+                toIndex = targetTasks.length; // Drop at end
+            } else {
+                // Dragged over another task (sorting or re-parenting if subtask)
+                const overTask = tasks.find(t => t.id === overId);
+                if (overTask) {
+                    toSectionId = overTask.sectionId ?? null;
+                    toParentId = overTask.parentId ?? null;
+
+                    if (toParentId) {
+                        // Dragged over a subtask
+                        const targetSubtasks = tasks.filter(t => t.parentId === toParentId);
+                        toIndex = targetSubtasks.findIndex(t => t.id === overId);
+                    } else {
+                        // Dragged over a main task
+                        const targetTasks = toSectionId ? (tasksBySection[toSectionId] || []) : unsectionedTasks;
+                        toIndex = targetTasks.findIndex(t => t.id === overId);
+                    }
+                }
+            }
+
+            if (activeTask.parentId === toParentId && activeTask.sectionId === toSectionId) {
+                // Reorder within same context (same parent or same section if top-level)
+                if (toParentId) {
+                    const currentSubtasks = tasks.filter(t => t.parentId === toParentId).map(t => t.id);
+                    const oldIndex = currentSubtasks.indexOf(activeId);
+                    if (oldIndex !== -1 && toIndex !== -1 && oldIndex !== toIndex) {
+                        const newOrderedIds = arrayMove(currentSubtasks, oldIndex, toIndex);
+                        reorderTasksWithinSection(id || null, toSectionId, newOrderedIds); // Reuse for order updating
+                    }
+                } else {
+                    const currentSectionTasks = toSectionId ? (tasksBySection[toSectionId] || []) : unsectionedTasks;
+                    const oldIndex = currentSectionTasks.findIndex(t => t.id === activeId);
+                    if (oldIndex !== -1 && toIndex !== -1 && oldIndex !== toIndex) {
+                        const newOrderedIds = arrayMove(currentSectionTasks.map(t => t.id), oldIndex, toIndex);
+                        reorderTasksWithinSection(id || null, toSectionId, newOrderedIds);
+                    }
+                }
+            } else if (toParentId) {
+                // Move from one parent to another or from section to parent
+                const moveSubtaskToParent = useTaskStore.getState().moveSubtaskToParent;
+                moveSubtaskToParent(activeId, toParentId, toIndex);
+            } else {
+                // Move from parent to section or across sections
+                // If it was a subtask, we need to clear its parentId
+                if (activeTask.parentId) {
+                    const setTaskParent = useTaskStore.getState().setTaskParent;
+                    setTaskParent(activeId, null);
+                }
+                moveTaskToSection(activeId, id || null, toSectionId, toIndex);
+            }
+        }
+
+        setActiveId(null);
     };
 
     if (isProjectLoading && projects.length === 0) {
@@ -170,148 +327,179 @@ export const Projects = () => {
     }
 
     return (
-        <div className="max-w-4xl mx-auto py-8 px-4 animate-in fade-in duration-500">
-            <header className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-4">
-                    <div
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-premium"
-                        style={{ backgroundColor: activeProject.color }}
-                    >
-                        {activeProject.name.charAt(0)}
+        <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+        >
+            <div className="max-w-4xl mx-auto py-8 px-4 animate-in fade-in duration-500">
+                <header className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                        <div
+                            className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl font-bold shadow-premium"
+                            style={{ backgroundColor: activeProject.color }}
+                        >
+                            {activeProject.name.charAt(0)}
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold tracking-tight text-foreground">{activeProject.name}</h2>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-muted-foreground">
+                                    {projectTasks.length} tasks
+                                </span>
+                                {activeProject.isShared && (
+                                    <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Shared</span>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <h2 className="text-2xl font-bold tracking-tight text-foreground">{activeProject.name}</h2>
-                        <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-muted-foreground">
-                                {projectTasks.length} tasks
-                            </span>
-                            {activeProject.isShared && (
-                                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">Shared</span>
+
+                    <div className="flex items-center gap-2">
+                        <IconButton icon={ListFilter} title="View Options" />
+                        <IconButton icon={LayoutGrid} title="Board View" />
+                        <div className="flex items-center gap-1">
+                            <IconButton
+                                icon={Pencil}
+                                title="Rename Project"
+                                onClick={() => {
+                                    setEditingProject(activeProject);
+                                    setIsModalOpen(true);
+                                }}
+                            />
+                            {!activeProject.isInbox && (
+                                <IconButton
+                                    icon={Trash2}
+                                    title="Delete Project"
+                                    onClick={() => {
+                                        if (confirm(`Are you sure you want to delete "${activeProject.name}"? Tasks will be moved to Inbox.`)) {
+                                            const inboxId = getInboxProjectId() || 'p1';
+                                            moveTasksToInbox(activeProject.id, inboxId);
+                                            deleteProject(activeProject.id);
+                                            navigate('/inbox');
+                                        }
+                                    }}
+                                    className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+                                />
                             )}
                         </div>
                     </div>
+                </header>
+
+                <ProjectModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSave={(name, color) => {
+                        if (editingProject) {
+                            updateProject(editingProject.id, { name, color });
+                        }
+                    }}
+                    initialProject={editingProject}
+                />
+
+                <div className="mb-8">
+                    {isAdding ? (
+                        <TaskForm
+                            onSave={handleSaveTask}
+                            onCancel={() => setIsAdding(false)}
+                        />
+                    ) : (
+                        <button
+                            onClick={() => setIsAdding(true)}
+                            className="flex items-center gap-3 text-sm text-muted-foreground hover:text-primary transition-colors group w-full px-4 py-3 rounded-xl hover:bg-primary/5 border border-transparent hover:border-primary/10"
+                        >
+                            <Plus className="w-4 h-4 text-primary transition-transform group-hover:scale-125 duration-300" />
+                            <span className="font-medium">Add task</span>
+                        </button>
+                    )}
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <IconButton icon={ListFilter} title="View Options" />
-                    <IconButton icon={LayoutGrid} title="Board View" />
-                    <div className="flex items-center gap-1">
-                        <IconButton
-                            icon={Pencil}
-                            title="Rename Project"
-                            onClick={() => {
-                                setEditingProject(activeProject);
-                                setIsModalOpen(true);
-                            }}
-                        />
-                        {!activeProject.isInbox && (
-                            <IconButton
-                                icon={Trash2}
-                                title="Delete Project"
-                                onClick={() => {
-                                    if (confirm(`Are you sure you want to delete "${activeProject.name}"? Tasks will be moved to Inbox.`)) {
-                                        const inboxId = getInboxProjectId() || 'p1';
-                                        moveTasksToInbox(activeProject.id, inboxId);
-                                        deleteProject(activeProject.id);
-                                        navigate('/inbox');
-                                    }
-                                }}
-                                className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
-                            />
+                <div className="space-y-10">
+                    {/* Unsectioned Tasks */}
+                    <div
+                        ref={setUnsectionedRef}
+                        className={cn(
+                            "space-y-1 rounded-2xl transition-all duration-300 min-h-[1.5rem]",
+                            isOverUnsectioned ? "bg-primary/5 ring-1 ring-primary/20" : ""
+                        )}
+                    >
+                        {unsectionedTasks.length > 0 && (
+                            <TaskListSortable projectId={activeProject.id} sectionId={null} tasks={unsectionedTasks} isNested={false} />
+                        )}
+                        {unsectionedTasks.length === 0 && isOverUnsectioned && (
+                            <div className="py-6 text-center text-muted-foreground/40 text-xs italic bg-muted/20 rounded-xl border border-dashed border-border/40">
+                                Drop tasks here to move to inbox
+                            </div>
                         )}
                     </div>
-                </div>
-            </header>
 
-            <ProjectModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSave={(name, color) => {
-                    if (editingProject) {
-                        updateProject(editingProject.id, { name, color });
-                    }
-                }}
-                initialProject={editingProject}
-            />
-
-            <div className="mb-8">
-                {isAdding ? (
-                    <TaskForm
-                        onSave={handleSaveTask}
-                        onCancel={() => setIsAdding(false)}
-                    />
-                ) : (
-                    <button
-                        onClick={() => setIsAdding(true)}
-                        className="flex items-center gap-3 text-sm text-muted-foreground hover:text-primary transition-colors group w-full px-4 py-3 rounded-xl hover:bg-primary/5 border border-transparent hover:border-primary/10"
-                    >
-                        <Plus className="w-4 h-4 text-primary transition-transform group-hover:scale-125 duration-300" />
-                        <span className="font-medium">Add task</span>
-                    </button>
-                )}
-            </div>
-
-            <div className="space-y-10">
-                {/* Unsectioned Tasks */}
-                {unsectionedTasks.length > 0 && (
-                    <div className="space-y-1">
-                        <TaskListSortable projectId={activeProject.id} sectionId={null} tasks={unsectionedTasks} isNested={false} />
-                    </div>
-                )}
-
-                {/* Sections */}
-                {projectSections.map((section: Section) => (
-                    <SectionList
-                        key={section.id}
-                        section={section}
-                        tasks={tasksBySection[section.id] || []}
-                    />
-                ))}
-
-                {/* Add Section */}
-                {isAddingSection ? (
-                    <form onSubmit={handleCreateSection} className="p-4 rounded-xl border border-border/50 bg-background/50">
-                        <input
-                            data-testid="section-name-input"
-                            type="text"
-                            placeholder="Name this section"
-                            value={newSectionName}
-                            onChange={(e) => setNewSectionName(e.target.value)}
-                            className="w-full bg-transparent border-none focus:ring-0 p-0 text-sm font-medium mb-3"
-                            autoFocus
+                    {/* Sections */}
+                    {projectSections.map((section: Section) => (
+                        <SectionList
+                            key={section.id}
+                            section={section}
+                            tasks={tasksBySection[section.id] || []}
                         />
-                        <div className="flex gap-2">
-                            <Button type="submit" size="sm" disabled={!newSectionName.trim()}>Add section</Button>
-                            <Button type="button" variant="ghost" size="sm" onClick={() => setIsAddingSection(false)}>Cancel</Button>
-                        </div>
-                    </form>
-                ) : (
-                    <div className="pt-2 border-t border-border/20">
-                        <button
-                            onClick={() => setIsAddingSection(true)}
-                            className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2 px-1"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>Add section</span>
-                        </button>
-                    </div>
-                )}
+                    ))}
 
-                {/* Empty Project State */}
-                {projectTasks.length === 0 && projectSections.length === 0 && !isTasksLoading && !isAdding && !isAddingSection && (
-                    <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 opacity-40">
-                        <div className="p-4 rounded-full bg-muted/50">
-                            <Plus className="w-8 h-8" />
+                    {/* Add Section */}
+                    {isAddingSection ? (
+                        <form onSubmit={handleCreateSection} className="p-4 rounded-xl border border-border/50 bg-background/50">
+                            <input
+                                data-testid="section-name-input"
+                                type="text"
+                                placeholder="Name this section"
+                                value={newSectionName}
+                                onChange={(e) => setNewSectionName(e.target.value)}
+                                className="w-full bg-transparent border-none focus:ring-0 p-0 text-sm font-medium mb-3"
+                                autoFocus
+                            />
+                            <div className="flex gap-2">
+                                <Button data-testid="section-save-btn" type="submit" size="sm" disabled={!newSectionName.trim()}>Add section</Button>
+                                <Button type="button" variant="ghost" size="sm" onClick={() => setIsAddingSection(false)}>Cancel</Button>
+                            </div>
+                        </form>
+                    ) : (
+                        <div className="pt-2 border-t border-border/20">
+                            <button
+                                onClick={() => setIsAddingSection(true)}
+                                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors py-2 px-1"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span>Add section</span>
+                            </button>
                         </div>
-                        <div>
-                            <p className="font-bold">This project is empty</p>
-                            <p className="text-sm">Get started by adding your first task.</p>
+                    )}
+
+                    {/* Empty Project State */}
+                    {projectTasks.length === 0 && projectSections.length === 0 && !isTasksLoading && !isAdding && !isAddingSection && (
+                        <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 opacity-40">
+                            <div className="p-4 rounded-full bg-muted/50">
+                                <Plus className="w-8 h-8" />
+                            </div>
+                            <div>
+                                <p className="font-bold">This project is empty</p>
+                                <p className="text-sm">Get started by adding your first task.</p>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => setIsAdding(true)}>Add Task</Button>
                         </div>
-                        <Button variant="outline" size="sm" onClick={() => setIsAdding(true)}>Add Task</Button>
-                    </div>
-                )}
+                    )}
+                </div>
+
             </div>
 
-        </div>
+            {createPortal(
+                <DragOverlay dropAnimation={dropAnimation}>
+                    {activeTask ? (
+                        <TaskItem
+                            key={`overlay-${activeTask.id}`}
+                            task={activeTask}
+                            isOverlay={true}
+                        />
+                    ) : null}
+                </DragOverlay>,
+                document.body
+            )}
+        </DndContext>
     );
 };

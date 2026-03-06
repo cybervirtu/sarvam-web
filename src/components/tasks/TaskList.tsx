@@ -13,6 +13,23 @@ interface TaskListProps {
     hideAddButton?: boolean;
 }
 
+const TaskListRow: React.FC<{ task: Task }> = ({ task }) => {
+    const subtasks = useTaskStore((state) => state.getSubtasks(task.id));
+
+    return (
+        <div className="space-y-1">
+            <TaskItem task={task} />
+            {subtasks.length > 0 && (
+                <div className="space-y-1">
+                    {subtasks.map(subtask => (
+                        <TaskItem key={subtask.id} task={subtask} isSubtask={true} />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 export const TaskList: React.FC<TaskListProps> = ({
     tasks,
     isLoading,
@@ -48,7 +65,7 @@ export const TaskList: React.FC<TaskListProps> = ({
     return (
         <div className="space-y-1" data-testid="task-list">
             {tasks.map((task) => (
-                <TaskItem key={task.id} task={task} />
+                <TaskListRow key={task.id} task={task} />
             ))}
 
             {!hideAddButton && (

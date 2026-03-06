@@ -6,6 +6,8 @@ import { IconButton } from '../common/IconButton';
 import { TaskForm } from '../tasks/TaskForm';
 import { useTaskStore, useProjectStore } from '../../app/store';
 import { Priority } from '../../types';
+import { useDroppable } from '@dnd-kit/core';
+import { cn } from '../../utils/cn';
 
 interface SectionListProps {
     section: Section;
@@ -19,6 +21,10 @@ export const SectionList: React.FC<SectionListProps> = ({ section, tasks }) => {
     const [editName, setEditName] = React.useState(section.name);
     const { addTask, clearTasksSection } = useTaskStore();
     const { updateSection, deleteSection } = useProjectStore();
+
+    const { setNodeRef, isOver } = useDroppable({
+        id: `section:${section.id}`,
+    });
 
     const handleSaveTask = (taskData: {
         title: string;
@@ -46,15 +52,21 @@ export const SectionList: React.FC<SectionListProps> = ({ section, tasks }) => {
     const memoizedTasks = React.useMemo(() => tasks, [tasks]);
 
     return (
-        <div className="space-y-2">
-            <header className="flex items-center justify-between group py-2">
+        <div
+            ref={setNodeRef}
+            className={cn(
+                "space-y-2 rounded-2xl transition-all duration-300",
+                isOver ? "bg-primary/5 ring-1 ring-primary/20" : ""
+            )}
+        >
+            <header className="flex items-center justify-between group py-3 px-2 rounded-xl transition-colors hover:bg-muted/30">
                 <div
                     className="flex items-center gap-2 cursor-pointer select-none flex-1"
                     onClick={() => {
                         if (!isEditingName) setIsExpanded(!isExpanded);
                     }}
                 >
-                    <div className="text-muted-foreground/50 group-hover:text-foreground transition-colors mr-1">
+                    <div className="text-muted-foreground/40 group-hover:text-foreground transition-colors mr-1">
                         {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </div>
                     {isEditingName ? (
@@ -65,15 +77,15 @@ export const SectionList: React.FC<SectionListProps> = ({ section, tasks }) => {
                                 onChange={(e) => setEditName(e.target.value)}
                                 autoFocus
                                 onBlur={() => setIsEditingName(false)}
-                                className="bg-transparent border-b border-primary focus:outline-none focus:ring-0 text-sm font-bold tracking-tight text-foreground/80 lowercase first-letter:uppercase placeholder-muted-foreground"
+                                className="bg-transparent border-b border-primary focus:outline-none focus:ring-0 text-sm font-bold tracking-tight text-foreground/80 lowercase first-letter:uppercase placeholder-muted-foreground w-full"
                             />
                         </form>
                     ) : (
-                        <h3 className="text-sm font-bold tracking-tight text-foreground/80 lowercase first-letter:uppercase">
+                        <h3 className="text-sm font-bold tracking-tight text-foreground/80 lowercase first-letter:uppercase transition-colors group-hover:text-foreground">
                             {section.name}
                         </h3>
                     )}
-                    <span className="text-[10px] font-medium text-muted-foreground/40 bg-muted px-1.5 py-0.5 rounded-full">
+                    <span className="text-[10px] font-semibold text-muted-foreground/60 bg-muted px-2 py-0.5 rounded-full ring-1 ring-border/50 group-hover:bg-background transition-colors">
                         {tasks.length}
                     </span>
                 </div>
@@ -83,6 +95,7 @@ export const SectionList: React.FC<SectionListProps> = ({ section, tasks }) => {
                         icon={MoreHorizontal}
                         size="sm"
                         title="Rename section"
+                        className="text-muted-foreground hover:bg-background/80 hover:text-foreground"
                         onClick={(e) => {
                             e.stopPropagation();
                             setEditName(section.name);
@@ -93,6 +106,7 @@ export const SectionList: React.FC<SectionListProps> = ({ section, tasks }) => {
                         icon={Plus}
                         size="sm"
                         title="Add task to section"
+                        className="text-muted-foreground hover:bg-background/80 hover:text-foreground"
                         onClick={(e) => {
                             e.stopPropagation();
                             setIsExpanded(true);
@@ -116,9 +130,9 @@ export const SectionList: React.FC<SectionListProps> = ({ section, tasks }) => {
             </header>
 
             {isExpanded && (
-                <div className="space-y-1 pl-1 border-l border-border/20 ml-2 animate-in slide-in-from-top-1 duration-200">
+                <div className="space-y-1 pl-1 border-l border-border/20 ml-2 animate-in slide-in-from-top-1 duration-200 min-h-[1.5rem]">
                     {isAdding && (
-                        <div className="mb-4 pr-1">
+                        <div className="mb-3 mt-1 pr-1">
                             <TaskForm
                                 onSave={handleSaveTask}
                                 onCancel={() => setIsAdding(false)}
@@ -128,8 +142,8 @@ export const SectionList: React.FC<SectionListProps> = ({ section, tasks }) => {
 
                     <TaskListSortable projectId={section.projectId} sectionId={section.id} tasks={memoizedTasks} isNested={true} />
 
-                    {tasks.length === 0 && (
-                        <div className="py-8 text-center text-muted-foreground/30 text-xs italic">
+                    {tasks.length === 0 && !isAdding && (
+                        <div className="py-6 text-center text-muted-foreground/40 text-xs italic bg-muted/20 rounded-xl border border-dashed border-border/40 mt-2">
                             No tasks in this section
                         </div>
                     )}

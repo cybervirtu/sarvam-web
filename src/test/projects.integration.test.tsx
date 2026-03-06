@@ -42,7 +42,7 @@ describe('Projects Integration', () => {
         const sectionInput = await screen.findByTestId('section-name-input');
         await user.type(sectionInput, 'Phase 1');
 
-        const saveSectionBtn = screen.getByRole('button', { name: 'Add section' });
+        const saveSectionBtn = screen.getByTestId('section-save-btn');
         await safeClick(user, saveSectionBtn);
 
         // 6. Verify section appears
