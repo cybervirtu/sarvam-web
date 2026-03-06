@@ -6,9 +6,8 @@ import {
     isSameDay,
     format,
     addDays,
-    parse,
 } from 'date-fns';
-import { Task, DueDate } from '../types';
+import { Task } from '../types';
 
 /**
  * Parses a task's due info into a comparable Date object.
@@ -104,7 +103,7 @@ export const groupTasksByDueDate = (
 export const formatGroupLabel = (date: Date, now: Date = new Date()): string => {
     if (isSameDay(date, now)) return 'Today';
     if (isSameDay(date, addDays(now, 1))) return 'Tomorrow';
-    
+
     // Check if it's the same year
     const sameYear = date.getFullYear() === now.getFullYear();
     return format(date, sameYear ? 'EEE, d MMM' : 'EEE, d MMM yyyy');
@@ -144,3 +143,6 @@ export const compareTasks = (a: Task, b: Task): number => {
     const orderB = b.order ?? 0;
     return orderA - orderB;
 };
+
+// Re-export for use in features
+export { addDays, startOfDay };

@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useTaskStore, useProjectStore } from '../../app/store';
-import { TaskItem } from '../../components/tasks/TaskItem';
-import { getNext7Days, formatDisplayDate } from '../../utils/date';
+import { TaskList } from '../../components/tasks/TaskList';
+import {
+    groupTasksByDueDate,
+    formatGroupLabel,
+    compareTasks,
+    addDays,
+    startOfDay
+} from '../../utils/dates';
 import { CalendarDays, ListFilter, MoreHorizontal, ChevronRight, Plus } from 'lucide-react';
 import { IconButton } from '../../components/common/IconButton';
+import { Button } from '../../components/common/Button';
 import { TaskForm } from '../../components/tasks/TaskForm';
 import { Priority } from '../../types';
+import { format } from 'date-fns';
 
 export const Upcoming = () => {
     const { tasks, fetchTasks, isLoading, addTask } = useTaskStore();
@@ -21,8 +29,15 @@ export const Upcoming = () => {
         }
     }, [tasks.length, projects.length, fetchTasks, fetchProjectsAndLabels]);
 
-    const next7Days = getNext7Days();
-    const activeTasks = tasks.filter(t => !t.completed).sort((a, b) => (a.order || 0) - (b.order || 0));
+    const now = new Date();
+    const startDate = startOfDay(now);
+    const endDate = addDays(startDate, 6); // 7 days inclusive
+
+    const activeTasks = tasks.filter(t => !t.completed);
+    const groupedTasks = groupTasksByDueDate(activeTasks, startDate, endDate);
+
+    // Generate array of date objects for the next 7 days for consistent rendering
+    const days = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
 
     const handleSaveTask = (taskData: {
         title: string;
@@ -38,12 +53,6 @@ export const Upcoming = () => {
         setAddingDate(null);
     };
 
-    // Group tasks by date
-    const tasksByDate = next7Days.reduce((acc, date) => {
-        acc[date] = activeTasks.filter(t => t.due?.date === date);
-        return acc;
-    }, {} as Record<string, typeof tasks>);
-
     if (isLoading && tasks.length === 0) {
         return (
             <div className="flex items-center justify-center min-h-[50vh]">
@@ -51,6 +60,8 @@ export const Upcoming = () => {
             </div>
         );
     }
+
+    const hasAnyUpcomingTasks = Object.values(groupedTasks).some(tasks => tasks.length > 0);
 
     return (
         <div className="max-w-3xl mx-auto py-8 px-4 animate-in fade-in duration-500">
@@ -71,28 +82,34 @@ export const Upcoming = () => {
                 </div>
             </header>
 
-            <div className="space-y-8">
-                {next7Days.map((date) => {
-                    const dayTasks = tasksByDate[date] || [];
-                    const displayDate = formatDisplayDate(date);
-                    const isAddingThisDate = addingDate === date;
+            <div className="space-y-10">
+                {days.map((date) => {
+                    const dateKey = format(date, 'dd-MM-yyyy');
+                    const isoKey = format(date, 'yyyy-MM-dd');
+                    const dayTasks = (groupedTasks[dateKey] || []).sort(compareTasks);
+                    const displayLabel = formatGroupLabel(date);
+                    const isAddingThisDate = addingDate === isoKey;
 
                     return (
-                        <section key={date} className="group/section">
-                            <header className="flex items-center justify-between py-2 px-1 border-b border-border/50 mb-3 sticky top-0 bg-background/80 backdrop-blur-sm z-10">
+                        <section key={dateKey} className="group/section">
+                            <header className="flex items-center justify-between py-2 px-1 border-b border-border/50 mb-4 sticky top-0 bg-background/80 backdrop-blur-sm z-10">
                                 <div className="flex items-center gap-3">
-                                    <h3 className="text-sm font-bold tracking-tight text-foreground/80 lowercase first-letter:uppercase">
-                                        {displayDate}
+                                    <h3 className={`text-sm font-bold tracking-tight lowercase first-letter:uppercase ${dayTasks.length > 0 ? 'text-foreground/90' : 'text-muted-foreground/50'}`}>
+                                        {displayLabel}
                                     </h3>
-                                    <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
-                                    <span className="text-[10px] font-medium text-muted-foreground/40">
-                                        {dayTasks.length} {dayTasks.length === 1 ? 'task' : 'tasks'}
-                                    </span>
+                                    {dayTasks.length > 0 && (
+                                        <>
+                                            <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
+                                            <span className="text-[10px] font-medium text-muted-foreground/40">
+                                                {dayTasks.length} {dayTasks.length === 1 ? 'task' : 'tasks'}
+                                            </span>
+                                        </>
+                                    )}
                                 </div>
 
                                 {!isAddingThisDate && (
                                     <button
-                                        onClick={() => setAddingDate(date)}
+                                        onClick={() => setAddingDate(isoKey)}
                                         className="opacity-0 group-hover/section:opacity-100 p-1 hover:bg-muted rounded-md transition-all text-muted-foreground hover:text-primary"
                                         title="Add task"
                                     >
@@ -103,7 +120,7 @@ export const Upcoming = () => {
 
                             <div className="space-y-1">
                                 {isAddingThisDate && (
-                                    <div className="mt-2 mb-4">
+                                    <div className="mt-2 mb-6 px-1">
                                         <TaskForm
                                             onSave={handleSaveTask}
                                             onCancel={() => setAddingDate(null)}
@@ -111,29 +128,52 @@ export const Upcoming = () => {
                                     </div>
                                 )}
 
+                                <TaskList
+                                    tasks={dayTasks}
+                                    isLoading={false}
+                                    hideAddButton={true}
+                                />
+
                                 {dayTasks.length === 0 && !isAddingThisDate && (
                                     <div
-                                        onClick={() => setAddingDate(date)}
-                                        className="py-6 px-4 rounded-2xl border border-dashed border-border/40 text-center group/empty transition-all hover:border-primary/20 hover:bg-primary/5 cursor-pointer mb-2"
+                                        onClick={() => setAddingDate(isoKey)}
+                                        className="py-6 px-4 rounded-2xl border border-dashed border-border/20 text-center group/empty transition-all hover:border-primary/20 hover:bg-primary/5 cursor-pointer mb-2"
                                     >
-                                        <p className="text-xs text-muted-foreground/40 group-hover/empty:text-primary/60 transition-colors">
+                                        <p className="text-[11px] text-muted-foreground/30 group-hover/empty:text-primary/60 transition-colors">
                                             No tasks scheduled. Click to add one.
                                         </p>
                                     </div>
                                 )}
-
-                                {dayTasks.map(task => (
-                                    <TaskItem key={task.id} task={task} />
-                                ))}
                             </div>
                         </section>
                     );
                 })}
             </div>
 
-            <div className="mt-12 pt-8 border-t border-border/50 text-center">
-                <p className="text-sm text-muted-foreground italic max-w-xs mx-auto">
-                    Looking further ahead? You can view all tasks by date in the calendar view coming soon.
+            {!hasAnyUpcomingTasks && !isLoading && (
+                <div className="mt-12 py-16 px-4 bg-muted/30 rounded-[2rem] text-center border border-border/50 animate-in zoom-in-95 duration-500">
+                    <div className="w-16 h-16 bg-background rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm ring-1 ring-border/50">
+                        <CalendarDays className="w-8 h-8 text-indigo-500/40" />
+                    </div>
+                    <h3 className="text-lg font-bold mb-2">Your week looks clear!</h3>
+                    <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-8">
+                        No tasks scheduled for the next 7 days. Take some time to plan your upcoming goals or enjoy the breathing room.
+                    </p>
+                    <Button
+                        variant="default"
+                        size="sm"
+                        className="rounded-full shadow-premium"
+                        onClick={() => setAddingDate(format(startDate, 'yyyy-MM-dd'))}
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Schedule first task
+                    </Button>
+                </div>
+            )}
+
+            <div className="mt-16 pt-10 border-t border-border/50 text-center">
+                <p className="text-xs text-muted-foreground/60 italic max-w-sm mx-auto leading-relaxed">
+                    Looking further ahead? You can view all tasks by date in the calendar view coming soon in a future sprint.
                 </p>
             </div>
         </div>
