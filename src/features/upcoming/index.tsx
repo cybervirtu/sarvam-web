@@ -6,9 +6,10 @@ import {
     formatGroupLabel,
     compareTasks,
     addDays,
-    startOfDay
+    startOfDay,
+    isOverdue
 } from '../../utils/dates';
-import { CalendarDays, ListFilter, MoreHorizontal, ChevronRight, Plus } from 'lucide-react';
+import { CalendarDays, ListFilter, MoreHorizontal, ChevronRight, Plus, AlertCircle } from 'lucide-react';
 import { IconButton } from '../../components/common/IconButton';
 import { Button } from '../../components/common/Button';
 import { TaskForm } from '../../components/tasks/TaskForm';
@@ -34,7 +35,14 @@ export const Upcoming = () => {
     const endDate = addDays(startDate, 6); // 7 days inclusive
 
     const activeTasks = tasks.filter(t => !t.completed);
+
+    // Grouped tasks for the next 7 days
     const groupedTasks = groupTasksByDueDate(activeTasks, startDate, endDate);
+
+    // Overdue tasks
+    const overdueTasks = activeTasks
+        .filter(t => isOverdue(t))
+        .sort(compareTasks);
 
     // Generate array of date objects for the next 7 days for consistent rendering
     const days = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
@@ -62,6 +70,7 @@ export const Upcoming = () => {
     }
 
     const hasAnyUpcomingTasks = Object.values(groupedTasks).some(tasks => tasks.length > 0);
+    const hasAnyTasks = overdueTasks.length > 0 || hasAnyUpcomingTasks;
 
     return (
         <div className="max-w-3xl mx-auto py-8 px-4 animate-in fade-in duration-500">
@@ -83,6 +92,22 @@ export const Upcoming = () => {
             </header>
 
             <div className="space-y-10">
+                {/* Overdue Section */}
+                {overdueTasks.length > 0 && (
+                    <section className="group/section">
+                        <header className="flex items-center gap-2 py-2 px-1 border-b border-border/50 mb-4 sticky top-0 bg-background/80 backdrop-blur-sm z-10 text-orange-600/80 dark:text-orange-400/80">
+                            <AlertCircle className="w-4 h-4" />
+                            <h3 className="text-sm font-bold tracking-tight uppercase">Overdue</h3>
+                        </header>
+                        <TaskList
+                            tasks={overdueTasks}
+                            isLoading={false}
+                            hideAddButton={true}
+                        />
+                    </section>
+                )}
+
+                {/* Grouped Upcoming Tasks */}
                 {days.map((date) => {
                     const dateKey = format(date, 'dd-MM-yyyy');
                     const isoKey = format(date, 'yyyy-MM-dd');
@@ -150,7 +175,7 @@ export const Upcoming = () => {
                 })}
             </div>
 
-            {!hasAnyUpcomingTasks && !isLoading && (
+            {!hasAnyTasks && !isLoading && (
                 <div className="mt-12 py-16 px-4 bg-muted/30 rounded-[2rem] text-center border border-border/50 animate-in zoom-in-95 duration-500">
                     <div className="w-16 h-16 bg-background rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm ring-1 ring-border/50">
                         <CalendarDays className="w-8 h-8 text-indigo-500/40" />
